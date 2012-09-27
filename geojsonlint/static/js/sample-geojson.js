@@ -8,7 +8,7 @@ var Point = {
 
 var MultiPoint = {
     "type": "MultiPoint",
-    coordinates: [
+    "coordinates": [
         [-105.01621, 39.57422],
         [-80.6665134, 35.0539943]
     ]

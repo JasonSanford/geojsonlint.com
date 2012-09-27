@@ -64,26 +64,15 @@ $(document).ready(function() {
     showGeoJsonSample('Point');
 
     function validateGeoJSON(testJson, callback) {
-        // TODO: Remove hack to always validate 'OK'
-        callback({
-            status: 'ok'
-        });
-        return;
-        // TODO: Remove hack to allow local testing at 127.0.0.1
-        var apiHost = window.location.host === 'localhost:5000'
-            ? '127.0.0.1:5000'
-            : 'api.geojsonlint.com';
         $.ajax({
             type: 'POST',
-            url: 'http://' + apiHost,
+            url: '/validate',
             dataType: 'json',
             data: JSON.stringify(testJson),
             contentType: 'application/json',
-            success: function(data, textStatus, jqXHR) {
-                callback(data);
-            },
+            success: callback,
             error: function(jqXHR, textStatus, errorThrown) {
-                console.log('jQuery Ajax Error');
+                
             }
         });
     }

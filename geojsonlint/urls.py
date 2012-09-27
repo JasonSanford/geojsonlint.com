@@ -8,6 +8,7 @@ from django.conf import settings
 urlpatterns = patterns('',
     # Examples:
     url(r'^$', 'geojsonlint.views.home', name='home'),
+    url(r'^validate$', 'geojsonlint.views.validate', name='validate'),
     # url(r'^geojsonlint/', include('geojsonlint.foo.urls')),
 
     # Uncomment the admin/doc line below to enable admin documentation:
