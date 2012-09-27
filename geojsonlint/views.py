@@ -25,8 +25,8 @@ def validate(request):
         return HttpResponseBadRequest(json.dumps(resp), mimetype='application/json')
     try:
         test_geojson = json.loads(request.raw_post_data)
-    except json.JSONDecodeError as e:
-        return _geojson_error('POSTed data was not JSON parseable.')
+    except:
+        return _geojson_error('POSTed data was not JSON serializeable.')
     # Everything checked out. Return 'ok'.
     resp = dict(
         status = 'ok',
