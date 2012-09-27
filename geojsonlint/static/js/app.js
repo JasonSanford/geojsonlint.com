@@ -64,6 +64,11 @@ $(document).ready(function() {
     showGeoJsonSample('Point');
 
     function validateGeoJSON(testJson, callback) {
+        // TODO: Remove hack to always validate 'OK'
+        callback({
+            status: 'ok'
+        });
+        return;
         // TODO: Remove hack to allow local testing at 127.0.0.1
         var apiHost = window.location.host === 'localhost:5000'
             ? '127.0.0.1:5000'
