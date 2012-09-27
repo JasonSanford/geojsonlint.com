@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+    
+    <head></head>
+    <title>GeoJSONLint</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="stylesheet" href="/static/lib/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/static/lib/bootstrap/css/bootstrap-responsive.min.css">
+    <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.4.3/leaflet.css">
+    <link rel="stylesheet" href="/static/css/app.css">
+    
+    <body>
+        <div class="navbar navbar-fixed-top">
+            <div class="navbar-inner">
+                <div class="container-fluid"><a class="brand">GeoJSONLint</a>
+                    <div class="nav-collapse">
+                        <ul class="nav">
+                            <li class="dropdown active"><a data-toggle="dropdown" class="dropdown-toggle">Point <b class="caret"></b></a>
+                                <ul
+                                class="dropdown-menu">
+                                    <li class="active"><a href="#sample-geojson-content" data-toggle="tab" data-geojson-type="Point">Point</a>
+                                    </li>
+                                    <li><a href="#sample-MultiPoint" data-toggle="tab" data-geojson-type="MultiPoint">MultiPoint</a>
+                                    </li>
+                        </ul>
+                        </li>
+                        <li class="dropdown"><a data-toggle="dropdown" class="dropdown-toggle">LineString <b class="caret"></b></a>
+                            <ul
+                            class="dropdown-menu">
+                                <li><a href="#sample-LineString" data-toggle="tab" data-geojson-type="LineString">LineString</a>
+                                </li>
+                                <li><a href="#sample-MultiLineString" data-toggle="tab" data-geojson-type="MultiLineString">MultiLineString</a>
+                                </li>
+                                </ul>
+                        </li>
+                        <li class="dropdown"><a data-toggle="dropdown" class="dropdown-toggle">Polygon <b class="caret"></b></a>
+                            <ul
+                            class="dropdown-menu">
+                                <li><a href="#sample-Polygon" data-toggle="tab" data-geojson-type="Polygon">Polygon</a>
+                                </li>
+                                <li><a href="#sample-MultiPolygon" data-toggle="tab" data-geojson-type="MultiPolygon">MultiPolygon</a>
+                                </li>
+                                </ul>
+                        </li>
+                        <li><a href="#sample-geojson-content" data-toggle="tab" data-geojson-type="Feature">Feature</a>
+                        </li>
+                        <li><a href="#sample-geojson-content" data-toggle="tab" data-geojson-type="FeatureCollection">FeatureCollection</a>
+                        </li>
+                        <li><a href="#sample-GeometryCollection" data-toggle="tab" data-geojson-type="GeometryCollection">GeometryCollection</a>
+                        </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="container-fluid">
+            <div id="input-output" class="row-fluid">
+                <div class="span4 left full-height">
+                    <div class="row-fluid">
+                        <textarea id="geojson-input" placeholder="Paste GeoJSON here"></textarea>
+                    </div>
+                    <div class="row-fluid text-centered">
+                        <input id="clear-current" type="checkbox" checked="checked">
+                        <label for="clear-current">Clear Current Features</label>
+                    </div>
+                    <div class="row-fluid text-centered"><a id="submit" class="btn btn-primary btn-large btn-action">Test GeoJSON</a>
+                        <a
+                        id="clear" class="btn btn-large btn-action">Clear</a>
+                    </div>
+                </div>
+                <div class="span8 right full-height">
+                    <div id="map-container" class="full-height"></div>
+                </div>
+            </div>
+        </div>
+        <div id="modal-message" class="modal">
+            <div class="modal-header">
+                <h3 id="modal-message-header">Invalid JSON</h3>
+            </div>
+            <div class="modal-body">
+                <p id="modal-message-body"></p>
+            </div>
+            <div class="modal-footer"><a id="modal-message-close" href="#" class="btn modal-close">Close</a>
+            </div>
+        </div>
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+        <script src="http://cdn.leafletjs.com/leaflet-0.4.3/leaflet.js"></script>
+        <script src="/static/lib/bootstrap/js/bootstrap.min.js"></script>
+        <script src="/static/js/sample-geojson.js"></script>
+        <script src="/static/js/app.js"></script>
+    </body>
+
+</html>
