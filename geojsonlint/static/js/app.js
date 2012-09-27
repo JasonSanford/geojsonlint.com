@@ -21,7 +21,7 @@ $(document).ready(function() {
             return;
         }
         try {
-            var testJson = JSON.parse($('#geojson-input').val());
+            var testJson = $('#geojson-input').val();
         } catch (e) {
             $('#modal-message-body').html(e.toString());
             $('#modal-message-header').html('Invalid JSON');
@@ -68,7 +68,7 @@ $(document).ready(function() {
             type: 'POST',
             url: '/validate',
             dataType: 'json',
-            data: JSON.stringify(testJson),
+            data: testJson,
             contentType: 'application/json',
             success: callback,
             error: function(jqXHR, textStatus, errorThrown) {
