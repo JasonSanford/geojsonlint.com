@@ -38,4 +38,4 @@ def _geojson_error(message):
         status = 'error',
         message = message,
     )
-    return HttpResponse(resp, mimetype='application/json')
+    return HttpResponse(json.dumps(resp), mimetype='application/json')
