@@ -36,7 +36,7 @@ $(document).ready(function() {
                 geojsonLayer.addData(JSON.parse($('#geojson-input').val()));
                 map.fitBounds(geojsonLayer.getBounds());
             } else if (data.status === 'error') {
-                $('#modal-message-body').html(data.message + ' ' + data.message);
+                $('#modal-message-body').html(data.message);
                 $('#modal-message-header').html('Invalid GeoJSON');
                 $('#modal-message').modal('show');
             } else {
