@@ -3,6 +3,10 @@ import json
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import render_to_response
 
+import validictory
+
+from schemas import position, point, multipoint, linestring, multilinestring, polygon, multipolygon, geometrycollection, feature, featurecollection
+
 def home(request):
     """
     GET /
@@ -23,10 +27,37 @@ def validate(request):
             message = 'GeoJSON data must be POSTed',
         )
         return HttpResponseBadRequest(json.dumps(resp), mimetype='application/json')
+
     try:
         test_geojson = json.loads(request.raw_post_data)
+        if not isinstance(test_geojson, dict):
+            return _geojson_error('POSTed data was not a JSON object.')
     except:
         return _geojson_error('POSTed data was not JSON serializeable.')
+
+    if not 'type' in test_geojson:
+        return _geojson_error('The "type" member is requried and was not found.')
+
+    geojson_types = dict(
+        Point = point,
+        MultiPoint = multipoint,
+        LineString = linestring,
+        MultiLineString = multilinestring,
+        Polygon = polygon,
+        MultiPolygon = multipolygon,
+        GeometryCollection = geometrycollection,
+        Feature = feature,
+        FeatureCollection = featurecollection,
+    )
+
+    if not test_geojson['type'] in geojson_types:
+        return _geojson_error('"%s" is not a valid GeoJSON type.' % test_geojson['type'])
+
+    try:
+        validictory.validate(test_geojson, geojson_types[test_geojson['type']])
+    except validictory.validator.ValidationError as error:
+        return _geojson_error(str(error))
+
     # Everything checked out. Return 'ok'.
     resp = dict(
         status = 'ok',
