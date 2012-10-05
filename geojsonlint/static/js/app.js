@@ -16,7 +16,7 @@ $(document).ready(function() {
 
     map.addLayer(geojsonLayer);
 
-    $('#submit').click(function() {
+    $('#submit').on('click', function() {
         if ($('#geojson-input').val().length < 1) {
             return;
         }
@@ -47,11 +47,11 @@ $(document).ready(function() {
         });
     })
 
-    $('#clear').click(function() {
+    $('#clear').on('click', function() {
         $('#geojson-input').val('');
     });
 
-    $('.modal-close').click(function(event) {
+    $('.modal-close').on('click', function(event) {
         event.preventDefault();
         $('#' + $(this).attr('id').split('-close')[0]).modal('hide');
     });
