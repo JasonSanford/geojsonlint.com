@@ -21,7 +21,9 @@ $(document).ready(function() {
                     popupString += k + ': ' + v + '<br />';
                 }
                 popupString += '</div>';
-                layer.bindPopup(popupString);
+                layer.bindPopup(popupString, {
+                    maxHeight: 200
+                });
             }
         }
     });
