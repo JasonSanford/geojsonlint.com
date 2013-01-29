@@ -5,7 +5,8 @@ from django.shortcuts import render_to_response
 
 import validictory
 
-from schemas import position, point, multipoint, linestring, multilinestring, polygon, multipolygon, geometrycollection, feature, featurecollection
+from schemas import point, multipoint, linestring, multilinestring, polygon, multipolygon, geometrycollection, feature, featurecollection
+
 
 def home(request):
     """
@@ -15,6 +16,7 @@ def home(request):
     """
     return render_to_response('index.html')
 
+
 def validate(request):
     """
     POST /validate
@@ -22,10 +24,10 @@ def validate(request):
     Validate GeoJSON data in POST body
     """
     if not request.method == 'POST':
-        resp = dict(
-            status = 'error',
-            message = 'GeoJSON data must be POSTed',
-        )
+        resp = {
+            'status': 'error',
+            'message': 'GeoJSON data must be POSTed',
+        }
         return HttpResponseBadRequest(json.dumps(resp), mimetype='application/json')
 
     try:
@@ -38,17 +40,17 @@ def validate(request):
     if not 'type' in test_geojson:
         return _geojson_error('The "type" member is requried and was not found.')
 
-    geojson_types = dict(
-        Point = point,
-        MultiPoint = multipoint,
-        LineString = linestring,
-        MultiLineString = multilinestring,
-        Polygon = polygon,
-        MultiPolygon = multipolygon,
-        GeometryCollection = geometrycollection,
-        Feature = feature,
-        FeatureCollection = featurecollection,
-    )
+    geojson_types = {
+        'Point': point,
+        'MultiPoint': multipoint,
+        'LineString': linestring,
+        'MultiLineString': multilinestring,
+        'Polygon': polygon,
+        'MultiPolygon': multipolygon,
+        'GeometryCollection': geometrycollection,
+        'Feature': feature,
+        'FeatureCollection': featurecollection,
+    }
 
     if not test_geojson['type'] in geojson_types:
         return _geojson_error('"%s" is not a valid GeoJSON type.' % test_geojson['type'])
@@ -59,14 +61,15 @@ def validate(request):
         return _geojson_error(str(error))
 
     # Everything checked out. Return 'ok'.
-    resp = dict(
-        status = 'ok',
-    )
+    resp = {
+        'status': 'ok',
+    }
     return HttpResponse(json.dumps(resp), mimetype='application/json')
 
+
 def _geojson_error(message):
-    resp = dict(
-        status = 'error',
-        message = message,
-    )
+    resp = {
+        'status': 'error',
+        'message': message,
+    }
     return HttpResponse(json.dumps(resp), mimetype='application/json')
