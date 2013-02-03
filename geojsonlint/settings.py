@@ -156,4 +156,3 @@ LOGGING = {
 }
 
 TEST_RUNNER = 'testrunner.NoDbTestRunner'
-
