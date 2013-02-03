@@ -123,6 +123,7 @@ INSTALLED_APPS = (
     # 'django.contrib.admin',
     # Uncomment the next line to enable admin documentation:
     # 'django.contrib.admindocs',
+    'geojsonlint',
 )
 
 # A sample logging configuration. The only tangible logging
@@ -153,3 +154,6 @@ LOGGING = {
         },
     }
 }
+
+TEST_RUNNER = 'testrunner.NoDbTestRunner'
+
