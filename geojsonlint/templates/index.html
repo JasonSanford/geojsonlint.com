@@ -96,6 +96,60 @@
         </div>
     </div>
     <div class="container-fluid" style="margin-top: 30px;">
+        <h3>Programmatic Access</h3>
+        <p>
+            If you need progrmmatic access to validate your GeoJSON you can simply use the same <code>/validate</code> endpoint that this site uses. It's <a href="http://en.wikipedia.org/wiki/Cross-origin_resource_sharing">CORS enabled</a> so you can use it from the browser as well as any back end.
+        </p>
+        <h4>JavaScript Example <small>via jQuery</small></h4>
+        <pre><code>var good_geojson = '{"type": "Point", "coordinates": [-100, 80]}';
+var bad_geojson = '{"type": "Rhombus", "coordinates": [[1, 2], [3, 4], [5, 6]]}';
+
+function processSuccess(data) {
+    if (data.status === 'ok') {
+        alert('You just posted some valid GeoJSON!');
+    } else if (data.status === 'error') {
+        alert('There was a problem with your GeoJSON: ' + data.message);
+    }
+}
+
+function processError() {
+    alert('There was a problem with your ajax.');
+}
+
+$.ajax({
+    url: 'http://geojsonlint.com/validate',
+    type: 'POST',
+    data: good_geojson,
+    dataType: 'json',
+    success: processSuccess,
+    error: processError
+});
+
+$.ajax({
+    url: 'http://geojsonlint.com/validate',
+    type: 'POST',
+    data: bad_geojson,
+    dataType: 'json',
+    success: processSuccess,
+    error: processError
+});</code></pre>
+
+        <h4>Python Example <small>via Requests</small></h4>
+        <pre><code>import requests
+
+validate_endpoint = 'http://geojsonlint.com/validate'
+good_geojson = '{"type": "Point", "coordinates": [-100, 80]}'
+bad_geojson = '{"type": "Rhombus", "coordinates": [[1, 2], [3, 4], [5, 6]]}'
+
+good_request = requests.post(validate_endpoint, data=good_geojson)
+bad_request = requests.post(validate_endpoint, data=bad_geojson)
+
+print good_request.json()
+# {u'status': u'ok'}
+print bad_request.json()
+# {u'status': u'error', u'message': u'"Rhombus" is not a valid GeoJSON type.'}</code></pre>
+    </div>
+    <div class="container-fluid" style="margin-top: 30px;">
         <h3>Questions?</h3>
         <p>
             Read the <a href="http://geojason.info/2012/geojson-validation-via-geojsonlint.com/">blog post</a> or check out the <a href="https://github.com/JasonSanford/geojsonlint.com">source code</a>.
