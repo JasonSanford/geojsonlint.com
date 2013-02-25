@@ -140,7 +140,8 @@ feature = {
                 multilinestring,
                 polygon,
                 multipolygon,
-                geometrycollection
+                geometrycollection,
+                None
             ]
         }
     }
