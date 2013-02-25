@@ -127,7 +127,10 @@ feature = {
             "pattern": "^Feature$"
         },
         "properties": {
-            "type": "object"
+            "type": [
+                "object",
+                None
+            ]
         },
         "geometry": {
             "type": [

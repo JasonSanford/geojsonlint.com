@@ -55,6 +55,25 @@ class TestValidateGoodType(unittest.TestCase):
         self.assertEqual(json.loads(response.content), GOOD_RESPONSE)
 
 
+class TestValidateNullProperties(unittest.TestCase):
+    def setUp(self):
+        self.client = Client()
+
+    def test_details(self):
+        null_properties_feature = {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [-100, 80]
+            },
+            "properties": None
+        }
+
+        response = self.client.post('/validate', data=json.dumps(null_properties_feature), content_type='application/json')
+
+        self.assertEqual(json.loads(response.content), GOOD_RESPONSE)
+
+
 class TestValidateBadJSON(unittest.TestCase):
     def setUp(self):
         self.client = Client()
