@@ -3,9 +3,12 @@ import json
 from django.utils import unittest
 from django.test.client import Client
 
+import sample_geojson as samples
+
 GOOD_RESPONSE = {
     'status': 'ok'
 }
+JSON = 'application/json'
 
 
 class TestHome(unittest.TestCase):
@@ -34,7 +37,7 @@ class TestValidateBadType(unittest.TestCase):
         }
 
         response = self.client.post('/validate', data=json.dumps(bad_type),
-                                    content_type='application/json')
+                                    content_type=JSON)
 
         self.assertEqual(json.loads(response.content), bad_type_message)
 
@@ -44,13 +47,9 @@ class TestValidateGoodType(unittest.TestCase):
         self.client = Client()
 
     def test_details(self):
-        good_type = {
-            "type": "Point",
-            "coordinates": [1, 2]
-        }
-
-        response = self.client.post('/validate', data=json.dumps(good_type),
-                                    content_type='application/json')
+        response = self.client.post('/validate',
+                                    data=json.dumps(samples.point),
+                                    content_type=JSON)
 
         self.assertEqual(json.loads(response.content), GOOD_RESPONSE)
 
@@ -69,7 +68,9 @@ class TestValidateNullProperties(unittest.TestCase):
             "properties": None
         }
 
-        response = self.client.post('/validate', data=json.dumps(null_properties_feature), content_type='application/json')
+        response = self.client.post('/validate',
+                                    data=json.dumps(null_properties_feature),
+                                    content_type=JSON)
 
         self.assertEqual(json.loads(response.content), GOOD_RESPONSE)
 
@@ -87,7 +88,9 @@ class TestValidateNullGeometry(unittest.TestCase):
             }
         }
 
-        response = self.client.post('/validate', data=json.dumps(null_properties_feature), content_type='application/json')
+        response = self.client.post('/validate',
+                                    data=json.dumps(null_properties_feature),
+                                    content_type=JSON)
 
         self.assertEqual(json.loads(response.content), GOOD_RESPONSE)
 
@@ -113,7 +116,7 @@ class TestValidateBadJSON(unittest.TestCase):
         }
 
         response = self.client.post('/validate', data=bad_json,
-                                    content_type='application/json')
+                                    content_type=JSON)
 
         self.assertEqual(json.loads(response.content), bad_json_message)
 
@@ -130,8 +133,7 @@ class TestValidateNotAnObject(unittest.TestCase):
         }
 
         response = self.client.post('/validate',
-                                    data=json.dumps(not_an_object),
-                                    content_type='application/json')
+                data=json.dumps(not_an_object), content_type=JSON)
 
         self.assertEqual(json.loads(response.content), not_an_object_message)
 
@@ -141,21 +143,52 @@ class TestValidateHTTPMethods(unittest.TestCase):
         self.client = Client()
 
     def test_details(self):
-        geojson = {
-            "type": "Point",
-            "coordinates": [1, 2]
-        }
-
         post_response = self.client.post('/validate',
-                                         data=json.dumps(geojson),
-                                         content_type='application/json')
+                data=json.dumps(samples.point), content_type=JSON)
         get_response = self.client.get('/validate')
         put_response = self.client.put('/validate',
-                                         data=json.dumps(geojson),
-                                         content_type='application/json')
+                data=json.dumps(samples.point), content_type=JSON)
         delete_response = self.client.delete('/validate')
 
         self.assertEqual(post_response.status_code, 200)
         self.assertEqual(get_response.status_code, 405)
         self.assertEqual(put_response.status_code, 405)
         self.assertEqual(delete_response.status_code, 405)
+
+
+class TestValidateValidThings(unittest.TestCase):
+    def setUp(self):
+        self.client = Client()
+
+    def test_details(self):
+        resp_point = self.client.post('/validate',
+                data=json.dumps(samples.point), content_type=JSON)
+        resp_point_three = self.client.post('/validate',
+                data=json.dumps(samples.point_three), content_type=JSON)
+        resp_multipoint = self.client.post('/validate',
+                data=json.dumps(samples.multipoint), content_type=JSON)
+        resp_linestring = self.client.post('/validate',
+                data=json.dumps(samples.linestring), content_type=JSON)
+        resp_multilinestring = self.client.post('/validate',
+                data=json.dumps(samples.multilinestring), content_type=JSON)
+        resp_polygon = self.client.post('/validate',
+                data=json.dumps(samples.polygon), content_type=JSON)
+        resp_multipolygon = self.client.post('/validate',
+                data=json.dumps(samples.multipolygon), content_type=JSON)
+        resp_feature = self.client.post('/validate',
+                data=json.dumps(samples.feature), content_type=JSON)
+        resp_featurecollection = self.client.post('/validate',
+                data=json.dumps(samples.featurecollection), content_type=JSON)
+        resp_geometrycollection = self.client.post('/validate',
+                data=json.dumps(samples.geometrycollection), content_type=JSON)
+
+        self.assertEqual(json.loads(resp_point.content), GOOD_RESPONSE)
+        self.assertEqual(json.loads(resp_point_three.content), GOOD_RESPONSE)
+        self.assertEqual(json.loads(resp_multipoint.content), GOOD_RESPONSE)
+        self.assertEqual(json.loads(resp_linestring.content), GOOD_RESPONSE)
+        self.assertEqual(json.loads(resp_multilinestring.content), GOOD_RESPONSE)
+        self.assertEqual(json.loads(resp_polygon.content), GOOD_RESPONSE)
+        self.assertEqual(json.loads(resp_multipolygon.content), GOOD_RESPONSE)
+        self.assertEqual(json.loads(resp_feature.content), GOOD_RESPONSE)
+        self.assertEqual(json.loads(resp_featurecollection.content), GOOD_RESPONSE)
+        self.assertEqual(json.loads(resp_geometrycollection.content), GOOD_RESPONSE)
