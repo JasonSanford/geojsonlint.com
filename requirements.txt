@@ -1,4 +1,6 @@
 Django==1.4.1
 distribute==0.6.24
+requests==1.1.0
+rollbar==0.5.2
 validictory==0.8.3
 wsgiref==0.1.2
