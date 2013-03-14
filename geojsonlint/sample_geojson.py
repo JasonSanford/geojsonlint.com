@@ -15,6 +15,15 @@ point_three = {
     ]
 }
 
+point_with_strings = {
+    "type": "Point",
+    "coordinates": [
+        "cat",
+        "dog",
+        "lobster"
+    ]
+}
+
 multipoint = {
     "type": "MultiPoint",
     "coordinates": [
