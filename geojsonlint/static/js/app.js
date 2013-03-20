@@ -75,6 +75,38 @@ $(document).ready(function() {
         $('#submit').trigger('click');
     });
 
+    if (window.File && window.FileReader) {
+        $('#geojson-input').on('dragenter', function (event) {
+            event.preventDefault();
+        });
+
+        $('#geojson-input').on('dragover', function (event) {
+            event.preventDefault();
+        });
+
+        $('#geojson-input').on('drop', function (event) {
+            event.preventDefault();
+
+            var dt = event.originalEvent.dataTransfer,
+                files = dt.files,
+                types = dt.types;
+
+            if (files) {
+                var file = files[0];
+
+                if (file.name.indexOf('.json') !== -1 || file.name.indexOf('.geojson') !== -1) {
+                    var reader = new FileReader();
+
+                    reader.onload = function () {
+                        $('#geojson-input').val(reader.result);
+                    };
+
+                    reader.readAsText(file);
+                }
+            }
+        });
+    }
+
     showGeoJsonSample('Point');
 
     function validateGeoJSON(testJson, callback) {
@@ -86,7 +118,7 @@ $(document).ready(function() {
             contentType: 'application/json',
             success: callback,
             error: function(jqXHR, textStatus, errorThrown) {
-                
+
             }
         });
     }
