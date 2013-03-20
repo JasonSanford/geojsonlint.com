@@ -31,3 +31,7 @@ body {
 
 .modal {
   display: none; }
+
+.drop-it {
+  border: 5px dashed #666;
+}

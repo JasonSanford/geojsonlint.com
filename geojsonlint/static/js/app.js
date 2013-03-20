@@ -34,15 +34,8 @@ $(document).ready(function() {
         if ($('#geojson-input').val().length < 1) {
             return;
         }
-        try {
-            var testJson = $('#geojson-input').val();
-        } catch (e) {
-            $('#modal-message-body').html(e.toString());
-            $('#modal-message-header').html('Invalid JSON');
-            $('#modal-message').modal('show');
-            return;
-        }
-        validateGeoJSON(testJson, function(data) {
+        var testJson = $('#geojson-input').val();
+        validateGeoJSON(testJson, function (data) {
             if (data.status === 'ok') {
                 if ($('#clear-current').attr('checked')) {
                     geojsonLayer.clearLayers();
@@ -59,7 +52,7 @@ $(document).ready(function() {
                 $('#modal-message').modal('show');
             }
         });
-    })
+    });
 
     $('#clear').on('click', function() {
         $('#geojson-input').val('');
@@ -77,6 +70,12 @@ $(document).ready(function() {
 
     if (window.File && window.FileReader) {
         $('#geojson-input').on('dragenter', function (event) {
+            showDroppable();
+            event.preventDefault();
+        });
+
+        $('#geojson-input').on('dragleave', function (event) {
+            hideDroppable();
             event.preventDefault();
         });
 
@@ -86,6 +85,8 @@ $(document).ready(function() {
 
         $('#geojson-input').on('drop', function (event) {
             event.preventDefault();
+
+            hideDroppable();
 
             var dt = event.originalEvent.dataTransfer,
                 files = dt.files,
@@ -125,5 +126,13 @@ $(document).ready(function() {
 
     function showGeoJsonSample(geojsonType) {
         $('#geojson-input').val(JSON.stringify(window[geojsonType], null, 4));
+    }
+
+    function showDroppable() {
+        $('#geojson-input').addClass('drop-it');
+    }
+
+    function hideDroppable() {
+        $('#geojson-input').removeClass('drop-it');
     }
 });
