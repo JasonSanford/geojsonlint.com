@@ -1,14 +1,20 @@
 var map;
 $(document).ready(function() {
+    var road_layer = new L.TileLayer('http://{s}.tiles.mapbox.com/v3/jcsanford.map-vita0cry/{z}/{x}/{y}.png', {
+            maxZoom: 18,
+            subdomains: ['a', 'b', 'c', 'd'],
+            attribution: 'Tiles Courtesy of <a href="http://www.mapbox.com/" target="_blank">MapBox</a>. Map data (c) <a href="http://www.openstreetmap.org/" target="_blank">OpenStreetMap</a> contributors, CC-BY-SA.'
+        }),
+        satellite_layer = new L.TileLayer('http://{s}.tiles.mapbox.com/v3/jcsanford.map-c487ey3y/{z}/{x}/{y}.png', {
+            maxZoom: 18,
+            subdomains: ['a', 'b', 'c', 'd'],
+            attribution: 'Map data (c) <a href="http://www.openstreetmap.org/" target="_blank">OpenStreetMap</a> contributors, CC-BY-SA.'
+        }),
     map = new L.Map('map-container', {
         center: new L.LatLng(37.92686760148135, -96.767578125),
         zoom: 4,
         layers: [
-            new L.TileLayer('http://{s}.tiles.mapbox.com/v3/jcsanford.map-vita0cry/{z}/{x}/{y}.png', {
-                maxZoom: 16,
-                subdomains: ['a', 'b', 'c', 'd'],
-                attribution: 'Tiles Courtesy of <a href="http://www.mapbox.com/" target="_blank">MapBox</a>. Map data (c) <a href="http://www.openstreetmap.org/" target="_blank">OpenStreetMap</a> contributors, CC-BY-SA.'
-            })
+            road_layer
         ]
     });
 
@@ -29,6 +35,8 @@ $(document).ready(function() {
     });
 
     map.addLayer(geojsonLayer);
+
+    L.control.layers({'Road': road_layer, 'Satellite': satellite_layer}, {'GeoJSON': geojsonLayer}).addTo(map);
 
     $('#submit').on('click', function() {
         if ($('#geojson-input').val().length < 1) {
