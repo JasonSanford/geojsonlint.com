@@ -7,6 +7,7 @@ from django.shortcuts import render_to_response
 import validictory
 
 from schemas import point, multipoint, linestring, multilinestring, polygon, multipolygon, geometrycollection, feature, featurecollection
+from utils import track_validate
 
 
 def home(request):
@@ -57,6 +58,7 @@ def validate(request):
         return _geojson_error(str(error))
 
     # Everything checked out. Return 'ok'.
+    track_validate()
     resp = {
         'status': 'ok',
     }
@@ -64,6 +66,7 @@ def validate(request):
 
 
 def _geojson_error(message):
+    track_validate(valid=False)
     resp = {
         'status': 'error',
         'message': message,
