@@ -1,4 +1,5 @@
 Django==1.4.1
+pyga==2.4.2
 requests==1.1.0
 rollbar==0.5.2
 validictory==0.8.3
