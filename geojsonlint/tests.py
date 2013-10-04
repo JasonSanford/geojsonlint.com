@@ -11,9 +11,11 @@ GOOD_RESPONSE = {
 JSON = 'application/json'
 
 
-class TestHome(unittest.TestCase):
+class RequestTestCase(unittest.TestCase):
     def setUp(self):
         self.client = Client()
+
+class TestHome(RequestTestCase):
 
     def test_home(self):
         response = self.client.get('/')
@@ -21,9 +23,7 @@ class TestHome(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
 
 
-class TestValidateBadType(unittest.TestCase):
-    def setUp(self):
-        self.client = Client()
+class TestValidateBadType(RequestTestCase):
 
     def test_bad_type(self):
         bad_type = {
@@ -41,9 +41,7 @@ class TestValidateBadType(unittest.TestCase):
         self.assertEqual(json.loads(response.content), bad_type_message)
 
 
-class TestValidateGoodType(unittest.TestCase):
-    def setUp(self):
-        self.client = Client()
+class TestValidateGoodType(RequestTestCase):
 
     def test_good_type(self):
         response = self.client.post('/validate',
@@ -53,9 +51,7 @@ class TestValidateGoodType(unittest.TestCase):
         self.assertEqual(json.loads(response.content), GOOD_RESPONSE)
 
 
-class TestValidateBadPosition(unittest.TestCase):
-    def setUp(self):
-        self.client = Client()
+class TestValidateBadPosition(RequestTestCase):
 
     def test_bad_position(self):
         response = self.client.post('/validate',
@@ -65,9 +61,7 @@ class TestValidateBadPosition(unittest.TestCase):
         self.assertEqual(response_json['status'], 'error')
 
 
-class TestValidateNullProperties(unittest.TestCase):
-    def setUp(self):
-        self.client = Client()
+class TestValidateNullProperties(RequestTestCase):
 
     def test_null_properties(self):
         null_properties_feature = {
@@ -86,9 +80,7 @@ class TestValidateNullProperties(unittest.TestCase):
         self.assertEqual(json.loads(response.content), GOOD_RESPONSE)
 
 
-class TestValidateNullGeometry(unittest.TestCase):
-    def setUp(self):
-        self.client = Client()
+class TestValidateNullGeometry(RequestTestCase):
 
     def test_null_geometry(self):
         null_properties_feature = {
@@ -106,11 +98,8 @@ class TestValidateNullGeometry(unittest.TestCase):
         self.assertEqual(json.loads(response.content), GOOD_RESPONSE)
 
 
-class TestValidateFeatureBadGeometry(unittest.TestCase):
-    def setUp(self):
-        self.client = Client()
+class TestValidateFeatureBadGeometry(RequestTestCase):
 
-    """
     def test_bad_feature_collection_geom(self):
         bad_geom = {
             "features": [
@@ -128,8 +117,7 @@ class TestValidateFeatureBadGeometry(unittest.TestCase):
         response = self.client.post('/validate',
                                     data=json.dumps(bad_geom),
                                     content_type=JSON)
-        self.assertEqual(json.loads(response.content), {'cats': True})
-    """
+        self.assertEqual(json.loads(response.content), {'status': 'error', 'message': '"BROKEN" is not a valid GeoJSON type.'})
 
     def test_bad_feature_geom(self):
         bad_geom = {
@@ -146,9 +134,7 @@ class TestValidateFeatureBadGeometry(unittest.TestCase):
         response_json = json.loads(response.content)
         self.assertEqual(response_json['status'], 'error')
 
-class TestFeatureCollectionBadFeatures(unittest.TestCase):
-    def setUp(self):
-        self.client = Client()
+class TestFeatureCollectionBadFeatures(RequestTestCase):
 
     def test_is_not_list_or_tuple(self):
         bad_fc = {
@@ -174,9 +160,7 @@ class TestFeatureCollectionBadFeatures(unittest.TestCase):
         self.assertEqual(response_json['message'], 'A FeatureCollection must have a "features" property.')
 
 
-class TestGeometryCollectionBadGeometries(unittest.TestCase):
-    def setUp(self):
-        self.client = Client()
+class TestGeometryCollectionBadGeometries(RequestTestCase):
 
     def test_is_not_list_or_tuple(self):
         bad_gc = {
@@ -202,9 +186,7 @@ class TestGeometryCollectionBadGeometries(unittest.TestCase):
         self.assertEqual(response_json['message'], 'A GeometryCollection must have a "geometries" property.')
 
 
-class TestValidateBadJSON(unittest.TestCase):
-    def setUp(self):
-        self.client = Client()
+class TestValidateBadJSON(RequestTestCase):
 
     def test_bad_json(self):
         # Missing ending curly brace
@@ -228,9 +210,7 @@ class TestValidateBadJSON(unittest.TestCase):
         self.assertEqual(json.loads(response.content), bad_json_message)
 
 
-class TestValidateNotAnObject(unittest.TestCase):
-    def setUp(self):
-        self.client = Client()
+class TestValidateNotAnObject(RequestTestCase):
 
     def test_not_an_object(self):
         not_an_object = [1, 2, 3, 'cat', 'house']
@@ -246,9 +226,7 @@ class TestValidateNotAnObject(unittest.TestCase):
         self.assertEqual(json.loads(response.content), not_an_object_message)
 
 
-class TestValidateHTTPMethods(unittest.TestCase):
-    def setUp(self):
-        self.client = Client()
+class TestValidateHTTPMethods(RequestTestCase):
 
     def test_post(self):
         post_response = self.client.post('/validate',
@@ -271,9 +249,7 @@ class TestValidateHTTPMethods(unittest.TestCase):
         self.assertEqual(delete_response.status_code, 405)
 
 
-class TestValidateValidThings(unittest.TestCase):
-    def setUp(self):
-        self.client = Client()
+class TestValidateValidThings(RequestTestCase):
 
     def test_point(self):
         resp_point = self.client.post('/validate',
