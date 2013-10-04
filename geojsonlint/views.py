@@ -4,10 +4,8 @@ from django.http import HttpResponse
 from django.views.decorators.http import require_POST
 from django.shortcuts import render_to_response
 
-import validictory
-
-from schemas import point, multipoint, linestring, multilinestring, polygon, multipolygon, geometrycollection, feature, featurecollection
-from utils import track_validate
+from utils import track_validate, validate_geojson
+from exc import GeoJSONValidationException
 
 
 def home(request):
@@ -37,25 +35,10 @@ def validate(request):
     if not 'type' in test_geojson:
         return _geojson_error('The "type" member is requried and was not found.')
 
-    geojson_types = {
-        'Point': point,
-        'MultiPoint': multipoint,
-        'LineString': linestring,
-        'MultiLineString': multilinestring,
-        'Polygon': polygon,
-        'MultiPolygon': multipolygon,
-        'GeometryCollection': geometrycollection,
-        'Feature': feature,
-        'FeatureCollection': featurecollection,
-    }
-
-    if not test_geojson['type'] in geojson_types:
-        return _geojson_error('"%s" is not a valid GeoJSON type.' % test_geojson['type'])
-
     try:
-        validictory.validate(test_geojson, geojson_types[test_geojson['type']])
-    except validictory.validator.ValidationError as error:
-        return _geojson_error(str(error))
+        validate_geojson(test_geojson)
+    except GeoJSONValidationException as e:
+        return _geojson_error(str(e))
 
     # Everything checked out. Return 'ok'.
     track_validate()

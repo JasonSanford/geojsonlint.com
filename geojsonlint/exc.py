@@ -1,0 +1,2 @@
+class GeoJSONValidationException(Exception):
+    pass

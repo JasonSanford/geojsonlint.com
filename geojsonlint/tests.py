@@ -106,6 +106,102 @@ class TestValidateNullGeometry(unittest.TestCase):
         self.assertEqual(json.loads(response.content), GOOD_RESPONSE)
 
 
+class TestValidateFeatureBadGeometry(unittest.TestCase):
+    def setUp(self):
+        self.client = Client()
+
+    """
+    def test_bad_feature_collection_geom(self):
+        bad_geom = {
+            "features": [
+                {
+                    "geometry": {
+                        "type": "BROKEN"
+                    },
+                    "properties": {},
+                    "type": "Feature"
+                }
+            ],
+            "type": "FeatureCollection"
+        }
+
+        response = self.client.post('/validate',
+                                    data=json.dumps(bad_geom),
+                                    content_type=JSON)
+        self.assertEqual(json.loads(response.content), {'cats': True})
+    """
+
+    def test_bad_feature_geom(self):
+        bad_geom = {
+            "geometry": {
+                "type": "BROKEN"
+            },
+            "properties": {},
+            "type": "Feature"
+        }
+
+        response = self.client.post('/validate',
+                                    data=json.dumps(bad_geom),
+                                    content_type=JSON)
+        response_json = json.loads(response.content)
+        self.assertEqual(response_json['status'], 'error')
+
+class TestFeatureCollectionBadFeatures(unittest.TestCase):
+    def setUp(self):
+        self.client = Client()
+
+    def test_is_not_list_or_tuple(self):
+        bad_fc = {
+            "type": "FeatureCollection",
+            "features": 'lobster'
+        }
+        response = self.client.post('/validate',
+                                    data=json.dumps(bad_fc),
+                                    content_type=JSON)
+        response_json = json.loads(response.content)
+        self.assertEqual(response_json['status'], 'error')
+        self.assertEqual(response_json['message'], 'A FeatureCollection\'s "features" property must be an array.')
+
+    def test_no_features(self):
+        bad_fc = {
+            "type": "FeatureCollection",
+        }
+        response = self.client.post('/validate',
+                                    data=json.dumps(bad_fc),
+                                    content_type=JSON)
+        response_json = json.loads(response.content)
+        self.assertEqual(response_json['status'], 'error')
+        self.assertEqual(response_json['message'], 'A FeatureCollection must have a "features" property.')
+
+
+class TestGeometryCollectionBadGeometries(unittest.TestCase):
+    def setUp(self):
+        self.client = Client()
+
+    def test_is_not_list_or_tuple(self):
+        bad_gc = {
+            "type": "GeometryCollection",
+            "geometries": 'lobster'
+        }
+        response = self.client.post('/validate',
+                                    data=json.dumps(bad_gc),
+                                    content_type=JSON)
+        response_json = json.loads(response.content)
+        self.assertEqual(response_json['status'], 'error')
+        self.assertEqual(response_json['message'], 'A GeometryCollection\'s "geometries" property must be an array.')
+
+    def test_no_geometries(self):
+        bad_gc = {
+            "type": "GeometryCollection",
+        }
+        response = self.client.post('/validate',
+                                    data=json.dumps(bad_gc),
+                                    content_type=JSON)
+        response_json = json.loads(response.content)
+        self.assertEqual(response_json['status'], 'error')
+        self.assertEqual(response_json['message'], 'A GeometryCollection must have a "geometries" property.')
+
+
 class TestValidateBadJSON(unittest.TestCase):
     def setUp(self):
         self.client = Client()
