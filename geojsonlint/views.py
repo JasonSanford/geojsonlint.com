@@ -25,31 +25,35 @@ def validate(request):
     Validate GeoJSON data in POST body
     """
 
+    testing = request.GET.get('testing')
+
     try:
         test_geojson = json.loads(request.raw_post_data)
         if not isinstance(test_geojson, dict):
-            return _geojson_error('POSTed data was not a JSON object.')
+            return _geojson_error('POSTed data was not a JSON object.', testing)
     except:
-        return _geojson_error('POSTed data was not JSON serializeable.')
+        return _geojson_error('POSTed data was not JSON serializeable.', testing)
 
     if not 'type' in test_geojson:
-        return _geojson_error('The "type" member is requried and was not found.')
+        return _geojson_error('The "type" member is requried and was not found.', testing)
 
     try:
         validate_geojson(test_geojson)
     except GeoJSONValidationException as e:
-        return _geojson_error(str(e))
+        return _geojson_error(str(e), testing)
 
     # Everything checked out. Return 'ok'.
-    track_validate()
+    if not testing:
+        track_validate()
     resp = {
         'status': 'ok',
     }
     return HttpResponse(json.dumps(resp), mimetype='application/json')
 
 
-def _geojson_error(message):
-    track_validate(valid=False)
+def _geojson_error(message, testing=False):
+    if not testing:
+        track_validate(valid=False)
     resp = {
         'status': 'error',
         'message': message,

@@ -4,12 +4,18 @@ from django.utils import unittest
 from django.test.client import Client
 
 import sample_geojson as samples
+from utils import validate_geojson
+from exc import GeoJSONValidationException
 
 GOOD_RESPONSE = {
     'status': 'ok'
 }
 JSON = 'application/json'
+validate_url = '/validate?testing=yuuup'
 
+#
+# Functional Tests
+#
 
 class RequestTestCase(unittest.TestCase):
     def setUp(self):
@@ -35,7 +41,7 @@ class TestValidateBadType(RequestTestCase):
             'message': '"Rhombus" is not a valid GeoJSON type.'
         }
 
-        response = self.client.post('/validate', data=json.dumps(bad_type),
+        response = self.client.post(validate_url, data=json.dumps(bad_type),
                                     content_type=JSON)
 
         self.assertEqual(json.loads(response.content), bad_type_message)
@@ -44,7 +50,7 @@ class TestValidateBadType(RequestTestCase):
 class TestValidateGoodType(RequestTestCase):
 
     def test_good_type(self):
-        response = self.client.post('/validate',
+        response = self.client.post(validate_url,
                                     data=json.dumps(samples.point),
                                     content_type=JSON)
 
@@ -54,7 +60,7 @@ class TestValidateGoodType(RequestTestCase):
 class TestValidateBadPosition(RequestTestCase):
 
     def test_bad_position(self):
-        response = self.client.post('/validate',
+        response = self.client.post(validate_url,
                                     data=json.dumps(samples.point_with_strings),
                                     content_type=JSON)
         response_json = json.loads(response.content)
@@ -73,7 +79,7 @@ class TestValidateNullProperties(RequestTestCase):
             "properties": None
         }
 
-        response = self.client.post('/validate',
+        response = self.client.post(validate_url,
                                     data=json.dumps(null_properties_feature),
                                     content_type=JSON)
 
@@ -91,7 +97,7 @@ class TestValidateNullGeometry(RequestTestCase):
             }
         }
 
-        response = self.client.post('/validate',
+        response = self.client.post(validate_url,
                                     data=json.dumps(null_properties_feature),
                                     content_type=JSON)
 
@@ -114,7 +120,7 @@ class TestValidateFeatureBadGeometry(RequestTestCase):
             "type": "FeatureCollection"
         }
 
-        response = self.client.post('/validate',
+        response = self.client.post(validate_url,
                                     data=json.dumps(bad_geom),
                                     content_type=JSON)
         self.assertEqual(json.loads(response.content), {'status': 'error', 'message': '"BROKEN" is not a valid GeoJSON type.'})
@@ -128,7 +134,7 @@ class TestValidateFeatureBadGeometry(RequestTestCase):
             "type": "Feature"
         }
 
-        response = self.client.post('/validate',
+        response = self.client.post(validate_url,
                                     data=json.dumps(bad_geom),
                                     content_type=JSON)
         response_json = json.loads(response.content)
@@ -141,7 +147,7 @@ class TestFeatureCollectionBadFeatures(RequestTestCase):
             "type": "FeatureCollection",
             "features": 'lobster'
         }
-        response = self.client.post('/validate',
+        response = self.client.post(validate_url,
                                     data=json.dumps(bad_fc),
                                     content_type=JSON)
         response_json = json.loads(response.content)
@@ -152,7 +158,7 @@ class TestFeatureCollectionBadFeatures(RequestTestCase):
         bad_fc = {
             "type": "FeatureCollection",
         }
-        response = self.client.post('/validate',
+        response = self.client.post(validate_url,
                                     data=json.dumps(bad_fc),
                                     content_type=JSON)
         response_json = json.loads(response.content)
@@ -167,7 +173,7 @@ class TestGeometryCollectionBadGeometries(RequestTestCase):
             "type": "GeometryCollection",
             "geometries": 'lobster'
         }
-        response = self.client.post('/validate',
+        response = self.client.post(validate_url,
                                     data=json.dumps(bad_gc),
                                     content_type=JSON)
         response_json = json.loads(response.content)
@@ -178,7 +184,7 @@ class TestGeometryCollectionBadGeometries(RequestTestCase):
         bad_gc = {
             "type": "GeometryCollection",
         }
-        response = self.client.post('/validate',
+        response = self.client.post(validate_url,
                                     data=json.dumps(bad_gc),
                                     content_type=JSON)
         response_json = json.loads(response.content)
@@ -204,7 +210,7 @@ class TestValidateBadJSON(RequestTestCase):
             'message': 'POSTed data was not JSON serializeable.'
         }
 
-        response = self.client.post('/validate', data=bad_json,
+        response = self.client.post(validate_url, data=bad_json,
                                     content_type=JSON)
 
         self.assertEqual(json.loads(response.content), bad_json_message)
@@ -219,7 +225,7 @@ class TestValidateNotAnObject(RequestTestCase):
             'message': 'POSTed data was not a JSON object.'
         }
 
-        response = self.client.post('/validate',
+        response = self.client.post(validate_url,
                                     data=json.dumps(not_an_object),
                                     content_type=JSON)
 
@@ -229,84 +235,123 @@ class TestValidateNotAnObject(RequestTestCase):
 class TestValidateHTTPMethods(RequestTestCase):
 
     def test_post(self):
-        post_response = self.client.post('/validate',
+        post_response = self.client.post(validate_url,
                                          data=json.dumps(samples.point),
                                          content_type=JSON)
         self.assertEqual(post_response.status_code, 200)
 
     def test_get(self):
-        get_response = self.client.get('/validate')
+        get_response = self.client.get(validate_url)
         self.assertEqual(get_response.status_code, 405)
 
     def test_put(self):
-        put_response = self.client.put('/validate',
+        put_response = self.client.put(validate_url,
                                        data=json.dumps(samples.point),
                                        content_type=JSON)
         self.assertEqual(put_response.status_code, 405)
 
     def test_delete(self):
-        delete_response = self.client.delete('/validate')
+        delete_response = self.client.delete(validate_url)
         self.assertEqual(delete_response.status_code, 405)
 
 
 class TestValidateValidThings(RequestTestCase):
 
     def test_point(self):
-        resp_point = self.client.post('/validate',
+        resp_point = self.client.post(validate_url,
                                       data=json.dumps(samples.point),
                                       content_type=JSON)
         self.assertEqual(json.loads(resp_point.content), GOOD_RESPONSE)
 
     def test_point_three(self):
-        resp_point_three = self.client.post('/validate',
+        resp_point_three = self.client.post(validate_url,
                                             data=json.dumps(samples.point_three),
                                             content_type=JSON)
         self.assertEqual(json.loads(resp_point_three.content), GOOD_RESPONSE)
 
     def test_multipoint(self):
-        resp_multipoint = self.client.post('/validate',
+        resp_multipoint = self.client.post(validate_url,
                                            data=json.dumps(samples.multipoint),
                                            content_type=JSON)
         self.assertEqual(json.loads(resp_multipoint.content), GOOD_RESPONSE)
 
     def test_linestring(self):
-        resp_linestring = self.client.post('/validate',
+        resp_linestring = self.client.post(validate_url,
                                            data=json.dumps(samples.linestring),
                                            content_type=JSON)
         self.assertEqual(json.loads(resp_linestring.content), GOOD_RESPONSE)
 
     def test_multilinestring(self):
-        resp_multilinestring = self.client.post('/validate',
+        resp_multilinestring = self.client.post(validate_url,
                                                 data=json.dumps(samples.multilinestring),
                                                 content_type=JSON)
         self.assertEqual(json.loads(resp_multilinestring.content), GOOD_RESPONSE)
 
     def test_polygon(self):
-        resp_polygon = self.client.post('/validate',
+        resp_polygon = self.client.post(validate_url,
                                         data=json.dumps(samples.polygon),
                                         content_type=JSON)
         self.assertEqual(json.loads(resp_polygon.content), GOOD_RESPONSE)
 
     def test_multipolygon(self):
-        resp_multipolygon = self.client.post('/validate',
+        resp_multipolygon = self.client.post(validate_url,
                                              data=json.dumps(samples.multipolygon),
                                              content_type=JSON)
         self.assertEqual(json.loads(resp_multipolygon.content), GOOD_RESPONSE)
 
     def test_feature(self):
-        resp_feature = self.client.post('/validate',
+        resp_feature = self.client.post(validate_url,
                                         data=json.dumps(samples.feature),
                                         content_type=JSON)
         self.assertEqual(json.loads(resp_feature.content), GOOD_RESPONSE)
 
     def test_featurecollection(self):
-        resp_featurecollection = self.client.post('/validate',
+        resp_featurecollection = self.client.post(validate_url,
                                                   data=json.dumps(samples.featurecollection),
                                                   content_type=JSON)
         self.assertEqual(json.loads(resp_featurecollection.content), GOOD_RESPONSE)
 
     def test_geometrycollection(self):
-        resp_geometrycollection = self.client.post('/validate',
+        resp_geometrycollection = self.client.post(validate_url,
                                                    data=json.dumps(samples.geometrycollection),
                                                    content_type=JSON)
         self.assertEqual(json.loads(resp_geometrycollection.content), GOOD_RESPONSE)
+
+#
+# Unit Tests
+#
+class UnitTestValidGeoJSON(unittest.TestCase):
+    s = samples
+    valids = [
+        s.point,
+        s.point_three,
+        s.multipoint,
+        s.linestring,
+        s.multilinestring,
+        s.polygon,
+        s.multipolygon,
+        s.feature,
+        s.featurecollection,
+        s.geometrycollection,
+    ]
+    for valid in valids:
+        # A GeoJSONValidationException will be raised if something is invalid, so just looping is fine.
+        validate_geojson(valid)
+
+
+class UnitTestInvalidGeoJSON(unittest.TestCase):
+    def test_invalid_geojson(self):
+        s = samples
+        invalids = [
+            s.point_with_strings,
+            s.featurecollection_bad_geom,
+            s.bad_type,
+        ]
+        valids = 0
+        for invalid in invalids:
+            try:
+                validate_geojson(invalid)
+                valids += 1
+            except GeoJSONValidationException:
+                pass
+        self.assertEqual(valids, 0)
