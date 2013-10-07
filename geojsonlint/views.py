@@ -1,13 +1,10 @@
 import json
+import requests
 
 from django.http import HttpResponse
-from django.views.decorators.http import require_POST
 from django.shortcuts import render_to_response
 
-import validictory
-
-from schemas import point, multipoint, linestring, multilinestring, polygon, multipolygon, geometrycollection, feature, featurecollection
-from utils import track_validate
+from utils import validate_json, track_validate
 
 
 def home(request):
@@ -19,7 +16,6 @@ def home(request):
     return render_to_response('index.html')
 
 
-@require_POST
 def validate(request):
     """
     POST /validate
@@ -27,35 +23,20 @@ def validate(request):
     Validate GeoJSON data in POST body
     """
 
-    try:
-        test_geojson = json.loads(request.raw_post_data)
-        if not isinstance(test_geojson, dict):
-            return _geojson_error('POSTed data was not a JSON object.')
-    except:
-        return _geojson_error('POSTed data was not JSON serializeable.')
-
-    if not 'type' in test_geojson:
-        return _geojson_error('The "type" member is requried and was not found.')
-
-    geojson_types = {
-        'Point': point,
-        'MultiPoint': multipoint,
-        'LineString': linestring,
-        'MultiLineString': multilinestring,
-        'Polygon': polygon,
-        'MultiPolygon': multipolygon,
-        'GeometryCollection': geometrycollection,
-        'Feature': feature,
-        'FeatureCollection': featurecollection,
-    }
-
-    if not test_geojson['type'] in geojson_types:
-        return _geojson_error('"%s" is not a valid GeoJSON type.' % test_geojson['type'])
+    if request.method == 'POST':
+        raw_json = request.raw_post_data
+    elif request.method == 'GET':
+        if "" != request.GET.get('u'):
+            try:
+                r = requests.get(request.GET.get('u'))
+                raw_json = r.text
+            except Exception as e:
+                return HttpResponse(json.dumps(_geojson_error(str(e))), mimetype='application/json')
 
     try:
-        validictory.validate(test_geojson, geojson_types[test_geojson['type']])
-    except validictory.validator.ValidationError as error:
-        return _geojson_error(str(error))
+        validate_json(raw_json)
+    except TypeError as error:
+        return HttpResponse(json.dumps(_geojson_error(str(error))), mimetype='application/json')
 
     # Everything checked out. Return 'ok'.
     track_validate()
@@ -71,4 +52,4 @@ def _geojson_error(message):
         'status': 'error',
         'message': message,
     }
-    return HttpResponse(json.dumps(resp), mimetype='application/json')
+    return resp
