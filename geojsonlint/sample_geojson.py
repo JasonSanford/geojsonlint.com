@@ -545,6 +545,14 @@ feature = {
     }
 }
 
+feature_bad_geom = {
+    "geometry": {
+        "type": "BROKEN"
+    },
+    "properties": {},
+    "type": "Feature"
+}
+
 featurecollection = {
     "type": "FeatureCollection",
     "features": [
@@ -662,6 +670,19 @@ featurecollection = {
     ]
 }
 
+featurecollection_bad_geom = {
+    "features": [
+        {
+            "geometry": {
+                "type": "BROKEN"
+            },
+            "properties": {},
+            "type": "Feature"
+        }
+    ],
+    "type": "FeatureCollection"
+}
+
 geometrycollection = {
     "type": "GeometryCollection",
     "geometries": [
@@ -723,4 +744,9 @@ geometrycollection = {
             ]
         }
     ]
+}
+
+bad_type = {
+    "type": "Rhombus",
+    "coordinates": [1, 2, 3, 4, 5]
 }
