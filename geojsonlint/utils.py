@@ -1,8 +1,9 @@
 from pyga.requests import Tracker
 from pyga.entities import Event, Session, Visitor
+import requests
 import validictory
 
-from .exc import GeoJSONValidationException
+from .exc import GeoJSONValidationException, NonFetchableURLException
 from .schemas import point, multipoint, linestring, multilinestring, polygon, multipolygon, geometrycollection, feature, featurecollection
 
 
@@ -72,3 +73,12 @@ def _validate_special_case(test_geojson):
         for geometry in test_geojson['geometries']:
             if geometry is not None:
                 validate_geojson(geometry)
+
+def get_remote_json(url):
+    try:
+        resp = requests.get(url)
+    except requests.exceptions.ConnectionError:
+        raise NonFetchableURLException
+    if resp.status_code != 200:
+        raise NonFetchableURLException
+    return resp.content

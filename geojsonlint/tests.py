@@ -1,4 +1,5 @@
 import json
+from urllib import urlencode
 
 from django.utils import unittest
 from django.test.client import Client
@@ -19,6 +20,9 @@ validate_url = '/validate?testing=yuuup'
 
 class RequestTestCase(unittest.TestCase):
     def setUp(self):
+        self.geojson_url = 'http://gitspatial.com/api/v1/JasonSanford/mecklenburg-gis-opendata/parks?lat=35.255&lon=-80.855&distance=1750'
+        self.geojson_url_bad1 = 'http://www.lobsterscatsdogsotheranimals.com'
+        self.geojson_url_bad2 = 'http://gitspatial.com/api/v1/JasonSanford/mecklenburg-gis-opendata/lobsters?lat=35.255&lon=-80.855&distance=1750'
         self.client = Client()
 
 class TestHome(RequestTestCase):
@@ -207,7 +211,7 @@ class TestValidateBadJSON(RequestTestCase):
         """
         bad_json_message = {
             'status': 'error',
-            'message': 'POSTed data was not JSON serializeable.'
+            'message': 'Data was not JSON serializeable.'
         }
 
         response = self.client.post(validate_url, data=bad_json,
@@ -222,7 +226,7 @@ class TestValidateNotAnObject(RequestTestCase):
         not_an_object = [1, 2, 3, 'cat', 'house']
         not_an_object_message = {
             'status': 'error',
-            'message': 'POSTed data was not a JSON object.'
+            'message': 'Data was not a JSON object.'
         }
 
         response = self.client.post(validate_url,
@@ -241,8 +245,9 @@ class TestValidateHTTPMethods(RequestTestCase):
         self.assertEqual(post_response.status_code, 200)
 
     def test_get(self):
-        get_response = self.client.get(validate_url)
-        self.assertEqual(get_response.status_code, 405)
+        encoded = urlencode({'url': self.geojson_url})
+        get_response = self.client.get(validate_url + ('&%s' % encoded))
+        self.assertEqual(get_response.status_code, 200)
 
     def test_put(self):
         put_response = self.client.put(validate_url,
@@ -317,6 +322,41 @@ class TestValidateValidThings(RequestTestCase):
                                                    content_type=JSON)
         self.assertEqual(json.loads(resp_geometrycollection.content), GOOD_RESPONSE)
 
+class TestURLParameters(RequestTestCase):
+
+    def test_url(self):
+        encoded = urlencode({'url': self.geojson_url})
+        resp = self.client.get(validate_url + ('&%s' % encoded))
+        json_content = json.loads(resp.content)
+        expected = {'status': 'ok'}
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(json_content, expected)
+
+    def test_bad_url_parameter(self):
+        encoded = urlencode({'urlzzz': self.geojson_url})
+        resp = self.client.get(validate_url + ('&%s' % encoded))
+        json_content = json.loads(resp.content)
+        expected = {'status': 'error', 'message': 'When validating via GET, a "url" URL parameter is required.'}
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(json_content, expected)
+
+    def test_could_not_be_fetched_no_domain(self):
+        # This domain cannot even be reached
+        encoded = urlencode({'url': self.geojson_url_bad1})
+        resp = self.client.get(validate_url + ('&%s' % encoded))
+        json_content = json.loads(resp.content)
+        expected = {'status': 'error', 'message': 'The URL passed could not be fetched.'}
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(json_content, expected)
+
+    def test_could_not_be_fetched(self):
+        # A valid domain, but should get a 404 for the requested URL
+        encoded = urlencode({'url': self.geojson_url_bad2})
+        resp = self.client.get(validate_url + ('&%s' % encoded))
+        json_content = json.loads(resp.content)
+        expected = {'status': 'error', 'message': 'The URL passed could not be fetched.'}
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(json_content, expected)
 #
 # Unit Tests
 #

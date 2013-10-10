@@ -1,11 +1,11 @@
 import json
 
 from django.http import HttpResponse
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_http_methods
 from django.shortcuts import render_to_response
 
-from utils import track_validate, validate_geojson
-from exc import GeoJSONValidationException
+from utils import track_validate, validate_geojson, get_remote_json
+from exc import GeoJSONValidationException, NonFetchableURLException
 
 
 def home(request):
@@ -17,7 +17,7 @@ def home(request):
     return render_to_response('index.html')
 
 
-@require_POST
+@require_http_methods(['GET', 'POST'])
 def validate(request):
     """
     POST /validate
@@ -27,12 +27,23 @@ def validate(request):
 
     testing = request.GET.get('testing')
 
+    if request.method == 'POST':
+        stringy_json = request.raw_post_data
+    else:  # GET
+        try:
+            remote_url = request.GET['url']
+            stringy_json = get_remote_json(remote_url)
+        except KeyError:  # The "url" URL parameter was missing
+            return _geojson_error('When validating via GET, a "url" URL parameter is required.', status=400)
+        except NonFetchableURLException:
+            return _geojson_error('The URL passed could not be fetched.')
+
     try:
-        test_geojson = json.loads(request.raw_post_data)
+        test_geojson = json.loads(stringy_json)
         if not isinstance(test_geojson, dict):
-            return _geojson_error('POSTed data was not a JSON object.', testing)
+            return _geojson_error('Data was not a JSON object.', testing)
     except:
-        return _geojson_error('POSTed data was not JSON serializeable.', testing)
+        return _geojson_error('Data was not JSON serializeable.', testing)
 
     if not 'type' in test_geojson:
         return _geojson_error('The "type" member is requried and was not found.', testing)
@@ -51,11 +62,11 @@ def validate(request):
     return HttpResponse(json.dumps(resp), mimetype='application/json')
 
 
-def _geojson_error(message, testing=False):
+def _geojson_error(message, testing=False, status=200):
     if not testing:
         track_validate(valid=False)
     resp = {
         'status': 'error',
         'message': message,
     }
-    return HttpResponse(json.dumps(resp), mimetype='application/json')
+    return HttpResponse(json.dumps(resp), mimetype='application/json', status=status)
