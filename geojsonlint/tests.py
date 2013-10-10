@@ -220,6 +220,24 @@ class TestValidateBadJSON(RequestTestCase):
         self.assertEqual(json.loads(response.content), bad_json_message)
 
 
+class TestValidateNoType(RequestTestCase):
+
+    def test_bad_json(self):
+        # Missing ending curly brace
+        no_type_json = {
+            'coordinates': [56, 79]
+        }
+        no_type_message = {
+            'status': 'error',
+            'message': 'The "type" member is requried and was not found.'
+        }
+
+        response = self.client.post(validate_url, data=json.dumps(no_type_json),
+                                    content_type=JSON)
+
+        self.assertEqual(json.loads(response.content), no_type_message)
+
+
 class TestValidateNotAnObject(RequestTestCase):
 
     def test_not_an_object(self):
