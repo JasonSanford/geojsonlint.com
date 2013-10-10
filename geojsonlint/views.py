@@ -54,8 +54,7 @@ def validate(request):
         return _geojson_error(str(e), testing)
 
     # Everything checked out. Return 'ok'.
-    if not testing:
-        track_validate()
+    track_validate()
     resp = {
         'status': 'ok',
     }
@@ -63,8 +62,7 @@ def validate(request):
 
 
 def _geojson_error(message, testing=False, status=200):
-    if not testing:
-        track_validate(valid=False)
+    track_validate(valid=False)
     resp = {
         'status': 'error',
         'message': message,

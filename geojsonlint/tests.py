@@ -12,7 +12,7 @@ GOOD_RESPONSE = {
     'status': 'ok'
 }
 JSON = 'application/json'
-validate_url = '/validate?testing=yuuup'
+validate_url = '/validate'
 
 #
 # Functional Tests
@@ -144,6 +144,32 @@ class TestValidateFeatureBadGeometry(RequestTestCase):
         response_json = json.loads(response.content)
         self.assertEqual(response_json['status'], 'error')
 
+    def test_no_geom(self):
+        no_geom = {
+            "properties": {},
+            "type": "Feature"
+        }
+
+        response = self.client.post(validate_url,
+                                    data=json.dumps(no_geom),
+                                    content_type=JSON)
+        response_json = json.loads(response.content)
+        self.assertEqual(response_json['status'], 'error')
+        self.assertEqual(response_json['message'], 'A Feature must have a "geometry" property.')
+
+    def test_no_properties(self):
+        no_props = {
+            "geometry": None,
+            "type": "Feature"
+        }
+
+        response = self.client.post(validate_url,
+                                    data=json.dumps(no_props),
+                                    content_type=JSON)
+        response_json = json.loads(response.content)
+        self.assertEqual(response_json['status'], 'error')
+        self.assertEqual(response_json['message'], 'A Feature must have a "properties" property.')
+
 class TestFeatureCollectionBadFeatures(RequestTestCase):
 
     def test_is_not_list_or_tuple(self):
@@ -264,7 +290,7 @@ class TestValidateHTTPMethods(RequestTestCase):
 
     def test_get(self):
         encoded = urlencode({'url': self.geojson_url})
-        get_response = self.client.get(validate_url + ('&%s' % encoded))
+        get_response = self.client.get(validate_url + ('?%s' % encoded))
         self.assertEqual(get_response.status_code, 200)
 
     def test_put(self):
@@ -344,7 +370,7 @@ class TestURLParameters(RequestTestCase):
 
     def test_url(self):
         encoded = urlencode({'url': self.geojson_url})
-        resp = self.client.get(validate_url + ('&%s' % encoded))
+        resp = self.client.get(validate_url + ('?%s' % encoded))
         json_content = json.loads(resp.content)
         expected = {'status': 'ok'}
         self.assertEqual(resp.status_code, 200)
@@ -352,7 +378,7 @@ class TestURLParameters(RequestTestCase):
 
     def test_bad_url_parameter(self):
         encoded = urlencode({'urlzzz': self.geojson_url})
-        resp = self.client.get(validate_url + ('&%s' % encoded))
+        resp = self.client.get(validate_url + ('?%s' % encoded))
         json_content = json.loads(resp.content)
         expected = {'status': 'error', 'message': 'When validating via GET, a "url" URL parameter is required.'}
         self.assertEqual(resp.status_code, 400)
@@ -361,7 +387,7 @@ class TestURLParameters(RequestTestCase):
     def test_could_not_be_fetched_no_domain(self):
         # This domain cannot even be reached
         encoded = urlencode({'url': self.geojson_url_bad1})
-        resp = self.client.get(validate_url + ('&%s' % encoded))
+        resp = self.client.get(validate_url + ('?%s' % encoded))
         json_content = json.loads(resp.content)
         expected = {'status': 'error', 'message': 'The URL passed could not be fetched.'}
         self.assertEqual(resp.status_code, 200)
@@ -370,7 +396,7 @@ class TestURLParameters(RequestTestCase):
     def test_could_not_be_fetched(self):
         # A valid domain, but should get a 404 for the requested URL
         encoded = urlencode({'url': self.geojson_url_bad2})
-        resp = self.client.get(validate_url + ('&%s' % encoded))
+        resp = self.client.get(validate_url + ('?%s' % encoded))
         json_content = json.loads(resp.content)
         expected = {'status': 'error', 'message': 'The URL passed could not be fetched.'}
         self.assertEqual(resp.status_code, 200)

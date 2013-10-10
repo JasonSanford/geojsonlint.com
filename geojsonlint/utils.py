@@ -8,12 +8,19 @@ from .schemas import point, multipoint, linestring, multilinestring, polygon, mu
 
 
 def track_validate(valid=True):
-    value = 1 if valid else 0
-    tracker = Tracker(account_id='UA-7385360-18', domain_name='geojsonlint.com')
-    event = Event(category='server', action='validate', value=value)
-    session = Session()
-    visitor = Visitor()
-    tracker.track_event(event, session, visitor)
+    try:
+        #
+        # This is just a nice-to-have. Do not fail tests or bail on the request
+        # for anything that goes wrong here.
+        #
+        value = 1 if valid else 0
+        tracker = Tracker(account_id='UA-7385360-18', domain_name='geojsonlint.com')
+        event = Event(category='server', action='validate', value=value)
+        session = Session()
+        visitor = Visitor()
+        tracker.track_event(event, session, visitor)
+    except:
+        pass
 
 
 def validate_geojson(test_geojson):
