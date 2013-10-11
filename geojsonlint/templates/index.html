@@ -149,19 +149,16 @@ print bad_request.json()
 
         <h3 id="geting">GETing</h3>
         <p>If you have GeoJSON at a publicly accesible URL, you can utilize the <code>/validate</code> endpoint with a <code>url</code> URL parameter to validate it. The URL must be URL encoded. If you've got JSON in memory <a href="#posting">POSTing</a> might be a better fit.</p>
-        <pre><code>from urllib import urlencode
-
-import requests
+        <pre><code>import requests
 
 validate_endpoint = 'http://geojsonlint.com/validate'
 url = 'http://gitspatial.com/api/v1/JasonSanford/mecklenburg-gis-opendata/parks?lat=35.255&lon=-80.855&distance=1750'
 
-encoded_params = urlencode({'url': url})
+params = {'url': url}
 
-response = requests.get(validate_endpoint + ('?%s' % encoded_params))
+response = requests.get(validate_endpoint, params=params)
 
-print response.json()
-# {u'status': u'ok'}</code></pre>
+print response.json()</code></pre>
     </div>
     <div class="container-fluid" style="margin-top: 30px;">
         <h3>Questions?</h3>
