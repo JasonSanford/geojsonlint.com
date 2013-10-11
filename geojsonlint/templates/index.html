@@ -92,11 +92,13 @@
         </div>
     </div>
     <div class="container-fluid" style="margin-top: 30px;">
-        <h3>Programmatic Access</h3>
+        <h2>Programmatic Access</h2>
         <p>
             If you need progrmmatic access to validate your GeoJSON you can simply use the same <code>/validate</code> endpoint that this site uses. It's <a href="http://en.wikipedia.org/wiki/Cross-origin_resource_sharing">CORS enabled</a> so you can use it from the browser as well as any back end.
         </p>
+        <h3 id="posting">POSTing</h3>
         <h4>JavaScript Example <small>via jQuery</small></h4>
+        <p><code>POST</code> to the <code>/validate</code> endpoint when you have a JSON blob in memory. If you've got JSON at an accessible URL, see <a href="#geting">GETing</a>.</p>
         <pre><code>var good_geojson = '{"type": "Point", "coordinates": [-100, 80]}';
 var bad_geojson = '{"type": "Rhombus", "coordinates": [[1, 2], [3, 4], [5, 6]]}';
 
@@ -144,6 +146,22 @@ print good_request.json()
 # {u'status': u'ok'}
 print bad_request.json()
 # {u'status': u'error', u'message': u'"Rhombus" is not a valid GeoJSON type.'}</code></pre>
+
+        <h3 id="geting">GETing</h3>
+        <p>If you have GeoJSON at a publicly accesible URL, you can utilize the <code>/validate</code> endpoint with a <code>url</code> URL parameter to validate it. The URL must be URL encoded. If you've got JSON in memory <a href="#posting">POSTing</a> might be a better fit.</p>
+        <pre><code>from urllib import urlencode
+
+import requests
+
+validate_endpoint = 'http://geojsonlint.com/validate'
+url = 'http://gitspatial.com/api/v1/JasonSanford/mecklenburg-gis-opendata/parks?lat=35.255&lon=-80.855&distance=1750'
+
+encoded_params = urlencode({'url': url})
+
+response = requests.get(validate_endpoint + ('?%s' % encoded_params))
+
+print response.json()
+# {u'status': u'ok'}</code></pre>
     </div>
     <div class="container-fluid" style="margin-top: 30px;">
         <h3>Questions?</h3>
