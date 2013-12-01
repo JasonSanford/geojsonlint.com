@@ -46,7 +46,7 @@ def validate(request):
         return _geojson_error('Data was not JSON serializeable.', testing)
 
     if not 'type' in test_geojson:
-        return _geojson_error('The "type" member is requried and was not found.', testing)
+        return _geojson_error('The "type" member is required and was not found.', testing)
 
     try:
         validate_geojson(test_geojson)

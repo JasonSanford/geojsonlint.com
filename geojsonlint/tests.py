@@ -255,7 +255,7 @@ class TestValidateNoType(RequestTestCase):
         }
         no_type_message = {
             'status': 'error',
-            'message': 'The "type" member is requried and was not found.'
+            'message': 'The "type" member is required and was not found.'
         }
 
         response = self.client.post(validate_url, data=json.dumps(no_type_json),
