@@ -58,12 +58,13 @@ def validate_geojson(test_geojson):
     return
 
 def _validate_special_case(test_geojson):
-
     def _validate_feature_ish_thing(test_geojson):
         if 'geometry' not in test_geojson:
             raise GeoJSONValidationException('A Feature must have a "geometry" property.')
         if 'properties' not in test_geojson:
             raise GeoJSONValidationException('A Feature must have a "properties" property.')
+        if 'type' not in test_geojson:
+            raise GeoJSONValidationException('A Feature must have a "type" property.')
         if test_geojson['geometry'] is not None:
             validate_geojson(test_geojson['geometry'])
 

@@ -421,7 +421,8 @@ class UnitTestInvalidGeoJSON(unittest.TestCase):
             s.point_with_strings,
             s.featurecollection_bad_geom,
             s.bad_type,
-            s.polygon_non_coincident_first_last
+            s.polygon_non_coincident_first_last,
+            s.featurecollection_missing_feature_types
         ]
         valids = 0
         for invalid in invalids:

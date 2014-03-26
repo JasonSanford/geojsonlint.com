@@ -695,6 +695,58 @@ featurecollection_bad_geom = {
     "type": "FeatureCollection"
 }
 
+featurecollection_missing_feature_types = {
+    "type": "FeatureCollection",
+    "features": [
+        {
+            "id": "1",
+            "properties": {
+                "displacement": 2.3,
+                "color": "black"
+            },
+            "geometry": {
+                "type": "GeometryCollection",
+                "geometries": [
+                    {
+                        "type": "Point",
+                        "coordinates": [200, 400]
+                    },
+                    {
+                        "type": "LineString",
+                        "coordinates": [
+                            [200, 400],
+                            [230, 440]
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "id": "2",
+            "properties": {
+                "displacement": 3.7,
+                "color": "red"
+            },
+            "geometry": {
+                "type": "GeometryCollection",
+                "geometries": [
+                    {
+                        "type": "Point",
+                        "coordinates": [1442, 888]
+                    },
+                    {
+                        "type": "LineString",
+                        "coordinates": [
+                            [1442,888],
+                            [1450, 825]
+                        ]
+                    }
+                ]
+            }
+        }
+    ]
+}
+
 geometrycollection = {
     "type": "GeometryCollection",
     "geometries": [
