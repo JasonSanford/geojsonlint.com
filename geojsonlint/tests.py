@@ -384,15 +384,6 @@ class TestURLParameters(RequestTestCase):
         self.assertEqual(resp.status_code, 400)
         self.assertEqual(json_content, expected)
 
-    def test_could_not_be_fetched_no_domain(self):
-        # This domain cannot even be reached
-        encoded = urlencode({'url': self.geojson_url_bad1})
-        resp = self.client.get(validate_url + ('?%s' % encoded))
-        json_content = json.loads(resp.content)
-        expected = {'status': 'error', 'message': 'The URL passed could not be fetched.'}
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(json_content, expected)
-
     def test_could_not_be_fetched(self):
         # A valid domain, but should get a 404 for the requested URL
         encoded = urlencode({'url': self.geojson_url_bad2})
@@ -430,6 +421,7 @@ class UnitTestInvalidGeoJSON(unittest.TestCase):
             s.point_with_strings,
             s.featurecollection_bad_geom,
             s.bad_type,
+            s.polygon_non_coincident_first_last
         ]
         valids = 0
         for invalid in invalids:

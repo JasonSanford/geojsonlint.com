@@ -301,6 +301,18 @@ polygon = {
     ]
 }
 
+polygon_non_coincident_first_last = {
+    "type": "Polygon",
+    "coordinates": [
+        [
+            [22.5, 31.952162238025],
+            [33.75, 31.952162238025],
+            [33.75, 40.97989806962],
+            [22.5, 40.97989806962]
+      ]
+    ]
+}
+
 multipolygon = {
     "type": "MultiPolygon",
     "coordinates": [

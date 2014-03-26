@@ -51,6 +51,10 @@ def validate_geojson(test_geojson):
         except validictory.validator.ValidationError as error:
             raise GeoJSONValidationException(str(error))
 
+    if test_geojson['type'] == 'Polygon':
+        # First and last coordinates must be coincident
+        _validate_polygon(test_geojson)
+
     return
 
 def _validate_special_case(test_geojson):
@@ -80,6 +84,11 @@ def _validate_special_case(test_geojson):
         for geometry in test_geojson['geometries']:
             if geometry is not None:
                 validate_geojson(geometry)
+
+def _validate_polygon(polygon):
+    for ring in polygon['coordinates']:
+        if ring[0] != ring[-1]:
+            raise GeoJSONValidationException('A Polygon\'s first and last points must be equivalent.')
 
 def get_remote_json(url):
     try:
