@@ -1,3 +1,4 @@
+(function() {
 var map;
 $(document).ready(function() {
     var road_layer = new L.TileLayer('http://otile{s}.mqcdn.com/tiles/1.0.0/map/{z}/{x}/{y}.png', {
@@ -144,3 +145,4 @@ $(document).ready(function() {
         $('#geojson-input').removeClass('drop-it');
     }
 });
+}());
