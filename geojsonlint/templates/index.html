@@ -168,14 +168,18 @@ print response.json()
         </p>
     </div>
     <div id="modal-message" class="modal">
-        <div class="modal-header">
-            <h3 id="modal-message-header">Invalid JSON</h3>
-        </div>
-        <div class="modal-body">
-            <p id="modal-message-body"></p>
-        </div>
-        <div class="modal-footer">
-            <a id="modal-message-close" href="#" class="btn modal-close">Close</a>
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="modal-message-header">Invalid JSON</h3>
+                </div>
+                <div class="modal-body">
+                    <p id="modal-message-body"></p>
+                </div>
+                <div class="modal-footer">
+                    <a id="modal-message-close" href="#" class="btn btn-default modal-close">Close</a>
+                </div>
+            </div>
         </div>
     </div>
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
