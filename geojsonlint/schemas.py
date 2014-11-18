@@ -1,7 +1,6 @@
 position = {
     "type": "array",
     "minItems": 2,
-    "maxItems": 3,
     "items": {
         "type": "number"
     }

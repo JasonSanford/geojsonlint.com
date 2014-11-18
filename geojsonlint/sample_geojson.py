@@ -15,6 +15,16 @@ point_three = {
     ]
 }
 
+point_four = {
+    "type": "Point",
+    "coordinates": [
+        -105.01621,
+        39.57422,
+        3,
+        0
+    ]
+}
+
 point_with_strings = {
     "type": "Point",
     "coordinates": [

@@ -318,6 +318,12 @@ class TestValidateValidThings(RequestTestCase):
                                             content_type=JSON)
         self.assertEqual(json.loads(resp_point_three.content), GOOD_RESPONSE)
 
+    def test_point_four(self):
+        resp_point_four = self.client.post(validate_url,
+                                            data=json.dumps(samples.point_four),
+                                            content_type=JSON)
+        self.assertEqual(json.loads(resp_point_four.content), GOOD_RESPONSE)
+
     def test_multipoint(self):
         resp_multipoint = self.client.post(validate_url,
                                            data=json.dumps(samples.multipoint),
