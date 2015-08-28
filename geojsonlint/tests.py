@@ -372,32 +372,6 @@ class TestValidateValidThings(RequestTestCase):
                                                    content_type=JSON)
         self.assertEqual(json.loads(resp_geometrycollection.content), GOOD_RESPONSE)
 
-class TestURLParameters(RequestTestCase):
-
-    def test_url(self):
-        encoded = urlencode({'url': self.geojson_url})
-        resp = self.client.get(validate_url + ('?%s' % encoded))
-        json_content = json.loads(resp.content)
-        expected = {'status': 'ok'}
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(json_content, expected)
-
-    def test_bad_url_parameter(self):
-        encoded = urlencode({'urlzzz': self.geojson_url})
-        resp = self.client.get(validate_url + ('?%s' % encoded))
-        json_content = json.loads(resp.content)
-        expected = {'status': 'error', 'message': 'When validating via GET, a "url" URL parameter is required.'}
-        self.assertEqual(resp.status_code, 400)
-        self.assertEqual(json_content, expected)
-
-    def test_could_not_be_fetched(self):
-        # A valid domain, but should get a 404 for the requested URL
-        encoded = urlencode({'url': self.geojson_url_bad2})
-        resp = self.client.get(validate_url + ('?%s' % encoded))
-        json_content = json.loads(resp.content)
-        expected = {'status': 'error', 'message': 'The URL passed could not be fetched.'}
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(json_content, expected)
 #
 # Unit Tests
 #
