@@ -98,8 +98,6 @@ MIDDLEWARE_CLASSES = (
     # Uncomment the next line for simple clickjacking protection:
     # 'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'geojsonlint.cors_middleware.XsSharing',
-    # For proper error handling Rollbar should remain last here
-    'rollbar.contrib.django.middleware.RollbarNotifierMiddleware',
 )
 
 ROOT_URLCONF = 'geojsonlint.urls'
@@ -158,10 +156,3 @@ LOGGING = {
 }
 
 TEST_RUNNER = 'testrunner.NoDbTestRunner'
-
-ROLLBAR = {
-    'access_token': '42b2abfd9da944edb33a38ce62269d16',
-    'environment': 'development' if DEBUG else 'production',
-    'branch': 'master',
-    'root': os.path.realpath(os.path.join(os.getcwd(), '..')),
-}
