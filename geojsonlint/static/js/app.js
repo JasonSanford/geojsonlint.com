@@ -44,23 +44,23 @@ $(document).ready(function() {
             return;
         }
         var testJson = $('#geojson-input').val();
-        validateGeoJSON(testJson, function (data) {
-            if (data.status === 'ok') {
-                if ($('#clear-current').attr('checked')) {
-                    geojsonLayer.clearLayers();
-                }
-                geojsonLayer.addData(JSON.parse($('#geojson-input').val()));
-                map.fitBounds(geojsonLayer.getBounds());
-            } else if (data.status === 'error') {
-                $('#modal-message-body').html(data.message);
-                $('#modal-message-header').html('Invalid GeoJSON');
-                $('#modal-message').modal('show');
-            } else {
-                $('#modal-message-body').html('An unknown error occured on the server. No one has been notified. You figure it out.');
-                $('#modal-message-header').html('Invalid GeoJSON');
-                $('#modal-message').modal('show');
-            }
-        });
+
+        var errors = geojsonhint.hint(testJson);
+
+        if (errors.length > 0) {
+          var message = errors.map(function(error) {
+            return 'Line ' + error.line + ': ' + error.message;
+          }).join('<br>')
+          $('#modal-message-body').html(message);
+          $('#modal-message-header').html('Invalid GeoJSON');
+          $('#modal-message').modal('show');
+        } else {
+          if ($('#clear-current').attr('checked')) {
+            geojsonLayer.clearLayers();
+          }
+          geojsonLayer.addData(JSON.parse($('#geojson-input').val()));
+          map.fitBounds(geojsonLayer.getBounds());
+        }
     });
 
     $('#clear').on('click', function() {
@@ -118,20 +118,6 @@ $(document).ready(function() {
     }
 
     showGeoJsonSample('Point');
-
-    function validateGeoJSON(testJson, callback) {
-        $.ajax({
-            type: 'POST',
-            url: '/validate',
-            dataType: 'json',
-            data: testJson,
-            contentType: 'application/json',
-            success: callback,
-            error: function(jqXHR, textStatus, errorThrown) {
-
-            }
-        });
-    }
 
     function showGeoJsonSample(geojsonType) {
         $('#geojson-input').val(JSON.stringify(window[geojsonType], null, 4));
