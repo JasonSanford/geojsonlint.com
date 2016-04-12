@@ -4,7 +4,7 @@ from django.http import HttpResponse
 from django.views.decorators.http import require_http_methods
 from django.shortcuts import render_to_response
 
-from utils import track_validate, validate_geojson, get_remote_json
+from utils import validate_geojson, get_remote_json
 from exc import GeoJSONValidationException, NonFetchableURLException
 
 
@@ -54,7 +54,6 @@ def validate(request):
         return _geojson_error(str(e), testing)
 
     # Everything checked out. Return 'ok'.
-    track_validate()
     resp = {
         'status': 'ok',
     }
@@ -62,7 +61,6 @@ def validate(request):
 
 
 def _geojson_error(message, testing=False, status=200):
-    track_validate(valid=False)
     resp = {
         'status': 'error',
         'message': message,
