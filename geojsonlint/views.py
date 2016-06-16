@@ -4,8 +4,8 @@ from django.http import HttpResponse
 from django.views.decorators.http import require_http_methods
 from django.shortcuts import render_to_response
 
-from utils import validate_geojson, get_remote_json
-from exc import GeoJSONValidationException, NonFetchableURLException
+from .utils import validate_geojson, get_remote_json
+from .exc import GeoJSONValidationException, NonFetchableURLException
 
 
 def home(request):
@@ -28,7 +28,7 @@ def validate(request):
     testing = request.GET.get('testing')
 
     if request.method == 'POST':
-        stringy_json = request.raw_post_data
+        stringy_json = request.body.decode('utf-8')
     else:  # GET
         try:
             remote_url = request.GET['url']
@@ -57,7 +57,7 @@ def validate(request):
     resp = {
         'status': 'ok',
     }
-    return HttpResponse(json.dumps(resp), mimetype='application/json')
+    return HttpResponse(json.dumps(resp), content_type='application/json')
 
 
 def _geojson_error(message, testing=False, status=200):
@@ -65,4 +65,4 @@ def _geojson_error(message, testing=False, status=200):
         'status': 'error',
         'message': message,
     }
-    return HttpResponse(json.dumps(resp), mimetype='application/json', status=status)
+    return HttpResponse(json.dumps(resp), content_type='application/json', status=status)
