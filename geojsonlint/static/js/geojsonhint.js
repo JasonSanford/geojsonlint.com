@@ -1,21 +1,51 @@
-!function(e){if("object"==typeof exports&&"undefined"!=typeof module)module.exports=e();else if("function"==typeof define&&define.amd)define([],e);else{var n;"undefined"!=typeof window?n=window:"undefined"!=typeof global?n=global:"undefined"!=typeof self&&(n=self),n.geojsonhint=e()}}(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
-var jsonlint = _dereq_('jsonlint-lines');
+(function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.geojsonhint = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+var rightHandRule = require('./rhr');
 
-function hint(str) {
+/**
+ * @alias geojsonhint
+ * @param {(string|object)} GeoJSON given as a string or as an object
+ * @param {Object} options
+ * @param {boolean} [options.noDuplicateMembers=true] forbid repeated
+ * properties. This is only available for string input, becaused parsed
+ * Objects cannot have duplicate properties.
+ * @param {boolean} [options.precisionWarning=true] warn if GeoJSON contains
+ * unnecessary coordinate precision.
+ * @returns {Array<Object>} an array of errors
+ */
+function hint(gj, options) {
 
-    var errors = [], gj;
+    var errors = [];
+    var precisionWarningCount = 0;
+    var maxPrecisionWarnings = 10;
+    var maxPrecision = 6;
 
     function root(_) {
-        if (!_.type) {
+
+        if ((!options || options.noDuplicateMembers !== false) &&
+           _.__duplicateProperties__) {
             errors.push({
-                message: 'The type property is required and was not found',
+                message: 'An object contained duplicate members, making parsing ambigous: ' + _.__duplicateProperties__.join(', '),
                 line: _.__line__
             });
-        } else if (!types[_.type]) {
-            errors.push({
-                message: 'The type ' + _.type + ' is unknown',
-                line: _.__line__
-            });
+        }
+
+        if (requiredProperty(_, 'type', 'string')) {
+            return;
+        }
+
+        if (!types[_.type]) {
+            var expectedType = typesLower[_.type.toLowerCase()];
+            if (expectedType !== undefined) {
+                errors.push({
+                    message: 'Expected ' + expectedType + ' but got ' + _.type + ' (case sensitive)',
+                    line: _.__line__
+                });
+            } else {
+                errors.push({
+                    message: 'The type ' + _.type + ' is unknown',
+                    line: _.__line__
+                });
+            }
         } else if (_) {
             types[_.type](_);
         }
@@ -23,28 +53,37 @@ function hint(str) {
 
     function everyIs(_, type) {
         // make a single exception because typeof null === 'object'
-        return _.every(function(x) { return (x !== null) && (typeof x === type); });
+        return _.every(function(x) {
+            return x !== null && typeof x === type;
+        });
     }
 
     function requiredProperty(_, name, type) {
-        if (typeof _[name] == 'undefined') {
+        if (typeof _[name] === 'undefined') {
             return errors.push({
-                message: '"' + name + '" property required',
+                message: '"' + name + '" member required',
                 line: _.__line__
             });
         } else if (type === 'array') {
             if (!Array.isArray(_[name])) {
                 return errors.push({
                     message: '"' + name +
-                        '" property should be an array, but is an ' +
+                        '" member should be an array, but is an ' +
                         (typeof _[name]) + ' instead',
                     line: _.__line__
                 });
             }
+        } else if (type === 'object' && _[name] && _[name].constructor.name !== 'Object') {
+            return errors.push({
+                message: '"' + name +
+                    '" member should be ' + (type) +
+                    ', but is an ' + (_[name].constructor.name) + ' instead',
+                line: _.__line__
+            });
         } else if (type && typeof _[name] !== type) {
             return errors.push({
                 message: '"' + name +
-                    '" property should be ' + (type) +
+                    '" member should be ' + (type) +
                     ', but is an ' + (typeof _[name]) + ' instead',
                 line: _.__line__
             });
@@ -52,17 +91,29 @@ function hint(str) {
     }
 
     // http://geojson.org/geojson-spec.html#feature-collection-objects
-    function FeatureCollection(_) {
-        crs(_);
-        bbox(_);
-        if (!requiredProperty(_, 'features', 'array')) {
-            if (!everyIs(_.features, 'object')) {
+    function FeatureCollection(featureCollection) {
+        crs(featureCollection);
+        bbox(featureCollection);
+        if (featureCollection.properties !== undefined) {
+            errors.push({
+                message: 'FeatureCollection object cannot contain a "properties" member',
+                line: featureCollection.__line__
+            });
+        }
+        if (featureCollection.coordinates !== undefined) {
+            errors.push({
+                message: 'FeatureCollection object cannot contain a "coordinates" member',
+                line: featureCollection.__line__
+            });
+        }
+        if (!requiredProperty(featureCollection, 'features', 'array')) {
+            if (!everyIs(featureCollection.features, 'object')) {
                 return errors.push({
                     message: 'Every feature must be an object',
-                    line: _.__line__
+                    line: featureCollection.__line__
                 });
             }
-            _.features.forEach(Feature);
+            featureCollection.features.forEach(Feature);
         }
     }
 
@@ -74,17 +125,48 @@ function hint(str) {
                     ' instead',
                 line: _.__line__ || line
             });
-        } else {
-            if (_.length < 2) {
+        }
+        if (_.length < 2) {
+            return errors.push({
+                message: 'position must have 2 or more elements',
+                line: _.__line__ || line
+            });
+        }
+        if (_.length > 3) {
+            return errors.push({
+                message: 'position should not have more than 3 elements',
+                line: _.__line__ || line
+            });
+        }
+        if (!everyIs(_, 'number')) {
+            return errors.push({
+                message: 'each element in a position must be a number',
+                line: _.__line__ || line
+            });
+        }
+
+        if (options && options.precisionWarning) {
+            if (precisionWarningCount === maxPrecisionWarnings) {
+                precisionWarningCount += 1;
                 return errors.push({
-                    message: 'position must have 2 or more elements',
+                    message: 'truncated warnings: we\'ve encountered coordinate precision warning ' + maxPrecisionWarnings + ' times, no more warnings will be reported',
+                    level: 'message',
                     line: _.__line__ || line
                 });
-            }
-            if (!everyIs(_, 'number')) {
-                return errors.push({
-                    message: 'each element in a position must be a number',
-                    line: _.__line__ || line
+            } else if (precisionWarningCount < maxPrecisionWarnings) {
+                _.forEach(function(num) {
+                    var precision = 0;
+                    var decimalStr = String(num).split('.')[1];
+                    if (decimalStr !== undefined)
+                        precision = decimalStr.length;
+                    if (precision > maxPrecision) {
+                        precisionWarningCount += 1;
+                        return errors.push({
+                            message: 'precision of coordinates should be reduced',
+                            level: 'message',
+                            line: _.__line__ || line
+                        });
+                    }
                 });
             }
         }
@@ -96,44 +178,45 @@ function hint(str) {
         }
         if (depth === 0) {
             return position(coords, line);
-        } else {
-            if (depth === 1 && type) {
-                if (type === 'LinearRing') {
-                    if (!Array.isArray(coords[coords.length - 1])) {
-                        return errors.push({
-                            message: 'a number was found where a coordinate array should have been found: this needs to be nested more deeply',
-                            line: line
-                        });
-                    }
-                    if (coords.length < 4) {
-                        errors.push({
-                            message: 'a LinearRing of coordinates needs to have four or more positions',
-                            line: line
-                        });
-                    }
-                    if (coords.length &&
-                        (coords[coords.length - 1].length !== coords[0].length ||
-                        !coords[coords.length - 1].every(function(position, index) {
-                        return coords[0][index] === position;
-                    }))) {
-                        errors.push({
-                            message: 'the first and last positions in a LinearRing of coordinates must be the same',
-                            line: line
-                        });
-                    }
-                } else if (type === 'Line' && coords.length < 2) {
+        }
+        if (depth === 1 && type) {
+            if (type === 'LinearRing') {
+                if (!Array.isArray(coords[coords.length - 1])) {
                     errors.push({
-                        message: 'a line needs to have two or more coordinates to be valid',
+                        message: 'a number was found where a coordinate array should have been found: this needs to be nested more deeply',
+                        line: line
+                    });
+                    return true;
+                }
+                if (coords.length < 4) {
+                    errors.push({
+                        message: 'a LinearRing of coordinates needs to have four or more positions',
                         line: line
                     });
                 }
-            }
-            if (!Array.isArray(coords)) {
+                if (coords.length &&
+                    (coords[coords.length - 1].length !== coords[0].length ||
+                    !coords[coords.length - 1].every(function(pos, index) {
+                        return coords[0][index] === pos;
+                }))) {
+                    errors.push({
+                        message: 'the first and last positions in a LinearRing of coordinates must be the same',
+                        line: line
+                    });
+                }
+            } else if (type === 'Line' && coords.length < 2) {
                 return errors.push({
-                    message: 'coordinates must be list of positions',
+                    message: 'a line needs to have two or more coordinates to be valid',
                     line: line
                 });
             }
+        }
+        if (!Array.isArray(coords)) {
+            errors.push({
+                message: 'a number was found where a coordinate array should have been found: this needs to be nested more deeply',
+                line: line
+            });
+        } else {
             coords.forEach(function(c) {
                 positionArray(c, type, depth - 1, c.__line__ || line);
             });
@@ -142,129 +225,190 @@ function hint(str) {
 
     function crs(_) {
         if (!_.crs) return;
-        if (typeof _.crs === 'object') {
-            var strErr = requiredProperty(_.crs, 'type', 'string'),
-                propErr = requiredProperty(_.crs, 'properties', 'object');
-            if (!strErr && !propErr) {
-                // http://geojson.org/geojson-spec.html#named-crs
-                if (_.crs.type == 'name') {
-                    requiredProperty(_.crs.properties, 'name', 'string');
-                } else if (_.crs.type == 'link') {
-                    requiredProperty(_.crs.properties, 'href', 'string');
-                }
-            }
+        var defaultCRSName = 'urn:ogc:def:crs:OGC:1.3:CRS84';
+        if (typeof _.crs === 'object' && _.crs.properties && _.crs.properties.name === defaultCRSName) {
+            errors.push({
+                message: 'old-style crs member is not recommended, this object is equivalent to the default and should be removed',
+                line: _.__line__
+            });
         } else {
             errors.push({
-                message: 'the value of the crs property must be an object, not a ' + (typeof _.crs),
+                message: 'old-style crs member is not recommended',
                 line: _.__line__
             });
         }
     }
 
     function bbox(_) {
-        if (!_.bbox) return;
+        if (!_.bbox) {
+            return;
+        }
         if (Array.isArray(_.bbox)) {
             if (!everyIs(_.bbox, 'number')) {
-                return errors.push({
-                    message: 'each element in a bbox property must be a number',
+                errors.push({
+                    message: 'each element in a bbox member must be a number',
                     line: _.bbox.__line__
                 });
             }
-        } else {
+            if (!(_.bbox.length === 4 || _.bbox.length === 6)) {
+                errors.push({
+                    message: 'bbox must contain 4 elements (for 2D) or 6 elements (for 3D)',
+                    line: _.bbox.__line__
+                });
+            }
+            return errors.length;
+        }
+        errors.push({
+            message: 'bbox member must be an array of numbers, but is a ' + (typeof _.bbox),
+            line: _.__line__
+        });
+    }
+
+    function geometrySemantics(geom) {
+        if (geom.properties !== undefined) {
             errors.push({
-                message: 'bbox property must be an array of numbers, but is a ' + (typeof _.bbox),
-                line: _.__line__
+                message: 'geometry object cannot contain a "properties" member',
+                line: geom.__line__
+            });
+        }
+        if (geom.geometry !== undefined) {
+            errors.push({
+                message: 'geometry object cannot contain a "geometry" member',
+                line: geom.__line__
+            });
+        }
+        if (geom.features !== undefined) {
+            errors.push({
+                message: 'geometry object cannot contain a "features" member',
+                line: geom.__line__
             });
         }
     }
 
     // http://geojson.org/geojson-spec.html#point
-    function Point(_) {
-        crs(_);
-        bbox(_);
-        if (!requiredProperty(_, 'coordinates', 'array')) {
-            position(_.coordinates);
+    function Point(point) {
+        crs(point);
+        bbox(point);
+        geometrySemantics(point);
+        if (!requiredProperty(point, 'coordinates', 'array')) {
+            position(point.coordinates);
         }
     }
 
     // http://geojson.org/geojson-spec.html#polygon
-    function Polygon(_) {
-        crs(_);
-        bbox(_);
-        if (!requiredProperty(_, 'coordinates', 'array')) {
-            positionArray(_.coordinates, 'LinearRing', 2);
+    function Polygon(polygon) {
+        crs(polygon);
+        bbox(polygon);
+        if (!requiredProperty(polygon, 'coordinates', 'array')) {
+            if (!positionArray(polygon.coordinates, 'LinearRing', 2)) {
+                rightHandRule(polygon, errors);
+            }
         }
     }
 
     // http://geojson.org/geojson-spec.html#multipolygon
-    function MultiPolygon(_) {
-        crs(_);
-        bbox(_);
-        if (!requiredProperty(_, 'coordinates', 'array')) {
-            positionArray(_.coordinates, 'LinearRing', 3);
+    function MultiPolygon(multiPolygon) {
+        crs(multiPolygon);
+        bbox(multiPolygon);
+        if (!requiredProperty(multiPolygon, 'coordinates', 'array')) {
+            if (!positionArray(multiPolygon.coordinates, 'LinearRing', 3)) {
+                rightHandRule(multiPolygon, errors);
+            }
         }
     }
 
     // http://geojson.org/geojson-spec.html#linestring
-    function LineString(_) {
-        crs(_);
-        bbox(_);
-        if (!requiredProperty(_, 'coordinates', 'array')) {
-            positionArray(_.coordinates, 'Line', 1);
+    function LineString(lineString) {
+        crs(lineString);
+        bbox(lineString);
+        if (!requiredProperty(lineString, 'coordinates', 'array')) {
+            positionArray(lineString.coordinates, 'Line', 1);
         }
     }
 
     // http://geojson.org/geojson-spec.html#multilinestring
-    function MultiLineString(_) {
-        crs(_);
-        bbox(_);
-        if (!requiredProperty(_, 'coordinates', 'array')) {
-            positionArray(_.coordinates, 'Line', 2);
+    function MultiLineString(multiLineString) {
+        crs(multiLineString);
+        bbox(multiLineString);
+        if (!requiredProperty(multiLineString, 'coordinates', 'array')) {
+            positionArray(multiLineString.coordinates, 'Line', 2);
         }
     }
 
     // http://geojson.org/geojson-spec.html#multipoint
-    function MultiPoint(_) {
-        crs(_);
-        bbox(_);
-        if (!requiredProperty(_, 'coordinates', 'array')) {
-            positionArray(_.coordinates, '', 1);
+    function MultiPoint(multiPoint) {
+        crs(multiPoint);
+        bbox(multiPoint);
+        if (!requiredProperty(multiPoint, 'coordinates', 'array')) {
+            positionArray(multiPoint.coordinates, '', 1);
         }
     }
 
-    function GeometryCollection(_) {
-        crs(_);
-        bbox(_);
-        if (!requiredProperty(_, 'geometries', 'array')) {
-            _.geometries.forEach(function(geometry) {
-                if (geometry) root(geometry);
+    function GeometryCollection(geometryCollection) {
+        crs(geometryCollection);
+        bbox(geometryCollection);
+        if (!requiredProperty(geometryCollection, 'geometries', 'array')) {
+            if (!everyIs(geometryCollection.geometries, 'object')) {
+                errors.push({
+                    message: 'The geometries array in a GeometryCollection must contain only geometry objects',
+                    line: geometryCollection.__line__
+                });
+            }
+            if (geometryCollection.geometries.length === 1) {
+                errors.push({
+                    message: 'GeometryCollection with a single geometry should be avoided in favor of single part or a single object of multi-part type',
+                    line: geometryCollection.geometries.__line__
+                });
+            }
+            geometryCollection.geometries.forEach(function(geometry) {
+                if (geometry) {
+                    if (geometry.type === 'GeometryCollection') {
+                        errors.push({
+                            message: 'GeometryCollection should avoid nested geometry collections',
+                            line: geometryCollection.geometries.__line__
+                        });
+                    }
+                    root(geometry);
+                }
             });
         }
     }
 
-    function Feature(_) {
-        crs(_);
-        bbox(_);
+    function Feature(feature) {
+        crs(feature);
+        bbox(feature);
         // https://github.com/geojson/draft-geojson/blob/master/middle.mkd#feature-object
-        if (_.id !== undefined &&
-            typeof _.id !== 'string' &&
-            typeof _.id !== 'number') {
+        if (feature.id !== undefined &&
+            typeof feature.id !== 'string' &&
+            typeof feature.id !== 'number') {
             errors.push({
-                message: 'Feature "id" property must have a string or number value',
-                line: _.__line__
+                message: 'Feature "id" member must have a string or number value',
+                line: feature.__line__
             });
         }
-        if (_.type !== 'Feature') {
+        if (feature.features !== undefined) {
             errors.push({
-                message: 'GeoJSON features must have a type=feature property',
-                line: _.__line__
+                message: 'Feature object cannot contain a "features" member',
+                line: feature.__line__
             });
         }
-        requiredProperty(_, 'properties', 'object');
-        if (!requiredProperty(_, 'geometry', 'object')) {
+        if (feature.coordinates !== undefined) {
+            errors.push({
+                message: 'Feature object cannot contain a "coordinates" member',
+                line: feature.__line__
+            });
+        }
+        if (feature.type !== 'Feature') {
+            errors.push({
+                message: 'GeoJSON features must have a type=feature member',
+                line: feature.__line__
+            });
+        }
+        requiredProperty(feature, 'properties', 'object');
+        if (!requiredProperty(feature, 'geometry', 'object')) {
             // http://geojson.org/geojson-spec.html#feature-objects
             // tolerate null geometry
-            if (_.geometry) root(_.geometry);
+            if (feature.geometry) root(feature.geometry);
         }
     }
 
@@ -280,25 +424,10 @@ function hint(str) {
         MultiPolygon: MultiPolygon
     };
 
-    if (typeof str !== 'string') {
-        return [{
-            message: 'Expected string input',
-            line: 0
-        }];
-    }
-
-    try {
-        gj = jsonlint.parse(str);
-    } catch(e) {
-        var match = e.message.match(/line (\d+)/),
-            lineNumber = 0;
-        if (match) lineNumber = parseInt(match[1], 10);
-        return [{
-            line: lineNumber - 1,
-            message: e.message,
-            error: e
-        }];
-    }
+    var typesLower = Object.keys(types).reduce(function(prev, curr) {
+        prev[curr.toLowerCase()] = curr;
+        return prev;
+    }, {});
 
     if (typeof gj !== 'object' ||
         gj === null ||
@@ -312,14 +441,70 @@ function hint(str) {
 
     root(gj);
 
+    errors.forEach(function(err) {
+        if ({}.hasOwnProperty.call(err, 'line') && err.line === undefined) {
+            delete err.line;
+        }
+    });
+
     return errors;
 }
 
 module.exports.hint = hint;
 
-},{"jsonlint-lines":2}],2:[function(_dereq_,module,exports){
+},{"./rhr":2}],2:[function(require,module,exports){
+function rad(x) {
+    return x * Math.PI / 180;
+}
+
+function isRingClockwise (coords) {
+    var area = 0;
+    if (coords.length > 2) {
+        var p1, p2;
+        for (var i = 0; i < coords.length - 1; i++) {
+            p1 = coords[i];
+            p2 = coords[i + 1];
+            area += rad(p2[0] - p1[0]) * (2 + Math.sin(rad(p1[1])) + Math.sin(rad(p2[1])));
+        }
+    }
+
+    return area >= 0;
+}
+
+function isPolyRHR (coords) {
+    if (coords && coords.length > 0) {
+        if (!isRingClockwise(coords[0]))
+            return false;
+        var interiorCoords = coords.slice(1, coords.length);
+        if (interiorCoords.some(isRingClockwise))
+            return false;
+    }
+    return true;
+}
+
+function rightHandRule (geometry) {
+    if (geometry.type === 'Polygon') {
+        return isPolyRHR(geometry.coordinates);
+    } else if (geometry.type === 'MultiPolygon') {
+        return geometry.coordinates.every(isPolyRHR);
+    }
+}
+
+module.exports = function validateRightHandRule(geometry, errors) {
+    if (!rightHandRule(geometry)) {
+        errors.push({
+            message: 'Polygons and MultiPolygons should follow the right-hand rule',
+            level: 'message',
+            line: geometry.__line__
+        });
+    }
+};
+
+},{}],3:[function(require,module,exports){
+
+},{}],4:[function(require,module,exports){
 (function (process){
-/* parser generated by jison 0.4.6 */
+/* parser generated by jison 0.4.17 */
 /*
   Returns a Parser object of the following structure:
 
@@ -393,6 +578,7 @@ module.exports.hint = hint;
   }
 */
 var jsonlint = (function(){
+var o=function(k,v,o,l){for(o=o||{},l=k.length;l--;o[k[l]]=v);return o},$V0=[1,12],$V1=[1,13],$V2=[1,9],$V3=[1,10],$V4=[1,11],$V5=[1,14],$V6=[1,15],$V7=[14,18,22,24],$V8=[18,22],$V9=[22,24];
 var parser = {trace: function trace() { },
 yy: {},
 symbols_: {"error":2,"JSONString":3,"STRING":4,"JSONNumber":5,"NUMBER":6,"JSONNullLiteral":7,"NULL":8,"JSONBooleanLiteral":9,"TRUE":10,"FALSE":11,"JSONText":12,"JSONValue":13,"EOF":14,"JSONObject":15,"JSONArray":16,"{":17,"}":18,"JSONMemberList":19,"JSONMember":20,":":21,",":22,"[":23,"]":24,"JSONElementList":25,"$accept":0,"$end":1},
@@ -403,7 +589,8 @@ performAction: function anonymous(yytext, yyleng, yylineno, yy, yystate /* actio
 
 var $0 = $$.length - 1;
 switch (yystate) {
-case 1: // replace escaped characters with actual character
+case 1:
+ // replace escaped characters with actual character
           this.$ = yytext.replace(/\\(\\|")/g, "$"+"1")
                      .replace(/\\n/g,'\n')
                      .replace(/\\r/g,'\r')
@@ -413,71 +600,104 @@ case 1: // replace escaped characters with actual character
                      .replace(/\\b/g,'\b');
 
 break;
-case 2:this.$ = Number(yytext);
+case 2:
+this.$ = Number(yytext);
 break;
-case 3:this.$ = null;
+case 3:
+this.$ = null;
 break;
-case 4:this.$ = true;
+case 4:
+this.$ = true;
 break;
-case 5:this.$ = false;
+case 5:
+this.$ = false;
 break;
-case 6:return this.$ = $$[$0-1];
+case 6:
+return this.$ = $$[$0-1];
 break;
-case 13:this.$ = {}; Object.defineProperty(this.$, '__line__', {
+case 13:
+this.$ = {}; Object.defineProperty(this.$, '__line__', {
             value: this._$.first_line,
             enumerable: false
         })
 break;
-case 14:this.$ = $$[$0-1]; Object.defineProperty(this.$, '__line__', {
+case 14: case 19:
+this.$ = $$[$0-1]; Object.defineProperty(this.$, '__line__', {
             value: this._$.first_line,
             enumerable: false
         })
 break;
-case 15:this.$ = [$$[$0-2], $$[$0]];
+case 15:
+this.$ = [$$[$0-2], $$[$0]];
 break;
-case 16:this.$ = {}; this.$[$$[$0][0]] = $$[$0][1];
+case 16:
+this.$ = {}; this.$[$$[$0][0]] = $$[$0][1];
 break;
-case 17:this.$ = $$[$0-2]; $$[$0-2][$$[$0][0]] = $$[$0][1];
+case 17:
+
+            this.$ = $$[$0-2];
+            if ($$[$0-2][$$[$0][0]] !== undefined) {
+                if (!this.$.__duplicateProperties__) {
+                    Object.defineProperty(this.$, '__duplicateProperties__', {
+                        value: [],
+                        enumerable: false
+                    });
+                }
+                this.$.__duplicateProperties__.push($$[$0][0]);
+            }
+            $$[$0-2][$$[$0][0]] = $$[$0][1];
+
 break;
-case 18:this.$ = []; Object.defineProperty(this.$, '__line__', {
+case 18:
+this.$ = []; Object.defineProperty(this.$, '__line__', {
             value: this._$.first_line,
             enumerable: false
         })
 break;
-case 19:this.$ = $$[$0-1]; Object.defineProperty(this.$, '__line__', {
-            value: this._$.first_line,
-            enumerable: false
-        })
+case 20:
+this.$ = [$$[$0]];
 break;
-case 20:this.$ = [$$[$0]];
-break;
-case 21:this.$ = $$[$0-2]; $$[$0-2].push($$[$0]);
+case 21:
+this.$ = $$[$0-2]; $$[$0-2].push($$[$0]);
 break;
 }
 },
-table: [{3:5,4:[1,12],5:6,6:[1,13],7:3,8:[1,9],9:4,10:[1,10],11:[1,11],12:1,13:2,15:7,16:8,17:[1,14],23:[1,15]},{1:[3]},{14:[1,16]},{14:[2,7],18:[2,7],22:[2,7],24:[2,7]},{14:[2,8],18:[2,8],22:[2,8],24:[2,8]},{14:[2,9],18:[2,9],22:[2,9],24:[2,9]},{14:[2,10],18:[2,10],22:[2,10],24:[2,10]},{14:[2,11],18:[2,11],22:[2,11],24:[2,11]},{14:[2,12],18:[2,12],22:[2,12],24:[2,12]},{14:[2,3],18:[2,3],22:[2,3],24:[2,3]},{14:[2,4],18:[2,4],22:[2,4],24:[2,4]},{14:[2,5],18:[2,5],22:[2,5],24:[2,5]},{14:[2,1],18:[2,1],21:[2,1],22:[2,1],24:[2,1]},{14:[2,2],18:[2,2],22:[2,2],24:[2,2]},{3:20,4:[1,12],18:[1,17],19:18,20:19},{3:5,4:[1,12],5:6,6:[1,13],7:3,8:[1,9],9:4,10:[1,10],11:[1,11],13:23,15:7,16:8,17:[1,14],23:[1,15],24:[1,21],25:22},{1:[2,6]},{14:[2,13],18:[2,13],22:[2,13],24:[2,13]},{18:[1,24],22:[1,25]},{18:[2,16],22:[2,16]},{21:[1,26]},{14:[2,18],18:[2,18],22:[2,18],24:[2,18]},{22:[1,28],24:[1,27]},{22:[2,20],24:[2,20]},{14:[2,14],18:[2,14],22:[2,14],24:[2,14]},{3:20,4:[1,12],20:29},{3:5,4:[1,12],5:6,6:[1,13],7:3,8:[1,9],9:4,10:[1,10],11:[1,11],13:30,15:7,16:8,17:[1,14],23:[1,15]},{14:[2,19],18:[2,19],22:[2,19],24:[2,19]},{3:5,4:[1,12],5:6,6:[1,13],7:3,8:[1,9],9:4,10:[1,10],11:[1,11],13:31,15:7,16:8,17:[1,14],23:[1,15]},{18:[2,17],22:[2,17]},{18:[2,15],22:[2,15]},{22:[2,21],24:[2,21]}],
+table: [{3:5,4:$V0,5:6,6:$V1,7:3,8:$V2,9:4,10:$V3,11:$V4,12:1,13:2,15:7,16:8,17:$V5,23:$V6},{1:[3]},{14:[1,16]},o($V7,[2,7]),o($V7,[2,8]),o($V7,[2,9]),o($V7,[2,10]),o($V7,[2,11]),o($V7,[2,12]),o($V7,[2,3]),o($V7,[2,4]),o($V7,[2,5]),o([14,18,21,22,24],[2,1]),o($V7,[2,2]),{3:20,4:$V0,18:[1,17],19:18,20:19},{3:5,4:$V0,5:6,6:$V1,7:3,8:$V2,9:4,10:$V3,11:$V4,13:23,15:7,16:8,17:$V5,23:$V6,24:[1,21],25:22},{1:[2,6]},o($V7,[2,13]),{18:[1,24],22:[1,25]},o($V8,[2,16]),{21:[1,26]},o($V7,[2,18]),{22:[1,28],24:[1,27]},o($V9,[2,20]),o($V7,[2,14]),{3:20,4:$V0,20:29},{3:5,4:$V0,5:6,6:$V1,7:3,8:$V2,9:4,10:$V3,11:$V4,13:30,15:7,16:8,17:$V5,23:$V6},o($V7,[2,19]),{3:5,4:$V0,5:6,6:$V1,7:3,8:$V2,9:4,10:$V3,11:$V4,13:31,15:7,16:8,17:$V5,23:$V6},o($V8,[2,17]),o($V8,[2,15]),o($V9,[2,21])],
 defaultActions: {16:[2,6]},
 parseError: function parseError(str, hash) {
     if (hash.recoverable) {
         this.trace(str);
     } else {
-        throw new Error(str);
+        function _parseError (msg, hash) {
+            this.message = msg;
+            this.hash = hash;
+        }
+        _parseError.prototype = Error;
+
+        throw new _parseError(str, hash);
     }
 },
 parse: function parse(input) {
-    var self = this, stack = [0], vstack = [null], lstack = [], table = this.table, yytext = '', yylineno = 0, yyleng = 0, recovering = 0, TERROR = 2, EOF = 1;
-    this.lexer.setInput(input);
-    this.lexer.yy = this.yy;
-    this.yy.lexer = this.lexer;
-    this.yy.parser = this;
-    if (typeof this.lexer.yylloc == 'undefined') {
-        this.lexer.yylloc = {};
+    var self = this, stack = [0], tstack = [], vstack = [null], lstack = [], table = this.table, yytext = '', yylineno = 0, yyleng = 0, recovering = 0, TERROR = 2, EOF = 1;
+    var args = lstack.slice.call(arguments, 1);
+    var lexer = Object.create(this.lexer);
+    var sharedState = { yy: {} };
+    for (var k in this.yy) {
+        if (Object.prototype.hasOwnProperty.call(this.yy, k)) {
+            sharedState.yy[k] = this.yy[k];
+        }
     }
-    var yyloc = this.lexer.yylloc;
+    lexer.setInput(input, sharedState.yy);
+    sharedState.yy.lexer = lexer;
+    sharedState.yy.parser = this;
+    if (typeof lexer.yylloc == 'undefined') {
+        lexer.yylloc = {};
+    }
+    var yyloc = lexer.yylloc;
     lstack.push(yyloc);
-    var ranges = this.lexer.options && this.lexer.options.ranges;
-    if (typeof this.yy.parseError === 'function') {
-        this.parseError = this.yy.parseError;
+    var ranges = lexer.options && lexer.options.ranges;
+    if (typeof sharedState.yy.parseError === 'function') {
+        this.parseError = sharedState.yy.parseError;
     } else {
         this.parseError = Object.getPrototypeOf(this).parseError;
     }
@@ -486,14 +706,15 @@ parse: function parse(input) {
         vstack.length = vstack.length - n;
         lstack.length = lstack.length - n;
     }
-    function lex() {
-        var token;
-        token = self.lexer.lex() || EOF;
-        if (typeof token !== 'number') {
-            token = self.symbols_[token] || token;
-        }
-        return token;
-    }
+    _token_stack:
+        var lex = function () {
+            var token;
+            token = lexer.lex() || EOF;
+            if (typeof token !== 'number') {
+                token = self.symbols_[token] || token;
+            }
+            return token;
+        };
     var symbol, preErrorSymbol, state, action, a, r, yyval = {}, p, len, newState, expected;
     while (true) {
         state = stack[stack.length - 1];
@@ -513,15 +734,15 @@ parse: function parse(input) {
                         expected.push('\'' + this.terminals_[p] + '\'');
                     }
                 }
-                if (this.lexer.showPosition) {
-                    errStr = 'Parse error on line ' + (yylineno + 1) + ':\n' + this.lexer.showPosition() + '\nExpecting ' + expected.join(', ') + ', got \'' + (this.terminals_[symbol] || symbol) + '\'';
+                if (lexer.showPosition) {
+                    errStr = 'Parse error on line ' + (yylineno + 1) + ':\n' + lexer.showPosition() + '\nExpecting ' + expected.join(', ') + ', got \'' + (this.terminals_[symbol] || symbol) + '\'';
                 } else {
                     errStr = 'Parse error on line ' + (yylineno + 1) + ': Unexpected ' + (symbol == EOF ? 'end of input' : '\'' + (this.terminals_[symbol] || symbol) + '\'');
                 }
                 this.parseError(errStr, {
-                    text: this.lexer.match,
+                    text: lexer.match,
                     token: this.terminals_[symbol] || symbol,
-                    line: this.lexer.yylineno,
+                    line: lexer.yylineno,
                     loc: yyloc,
                     expected: expected
                 });
@@ -532,15 +753,15 @@ parse: function parse(input) {
         switch (action[0]) {
         case 1:
             stack.push(symbol);
-            vstack.push(this.lexer.yytext);
-            lstack.push(this.lexer.yylloc);
+            vstack.push(lexer.yytext);
+            lstack.push(lexer.yylloc);
             stack.push(action[1]);
             symbol = null;
             if (!preErrorSymbol) {
-                yyleng = this.lexer.yyleng;
-                yytext = this.lexer.yytext;
-                yylineno = this.lexer.yylineno;
-                yyloc = this.lexer.yylloc;
+                yyleng = lexer.yyleng;
+                yytext = lexer.yytext;
+                yylineno = lexer.yylineno;
+                yyloc = lexer.yylloc;
                 if (recovering > 0) {
                     recovering--;
                 }
@@ -564,7 +785,15 @@ parse: function parse(input) {
                     lstack[lstack.length - 1].range[1]
                 ];
             }
-            r = this.performAction.call(yyval, yytext, yyleng, yylineno, this.yy, action[1], vstack, lstack);
+            r = this.performAction.apply(yyval, [
+                yytext,
+                yyleng,
+                yylineno,
+                sharedState.yy,
+                action[1],
+                vstack,
+                lstack
+            ].concat(args));
             if (typeof r !== 'undefined') {
                 return r;
             }
@@ -585,9 +814,9 @@ parse: function parse(input) {
     }
     return true;
 }};
-/* generated by jison-lex 0.2.1 */
+/* generated by jison-lex 0.3.4 */
 var lexer = (function(){
-var lexer = {
+var lexer = ({
 
 EOF:1,
 
@@ -600,7 +829,8 @@ parseError:function parseError(str, hash) {
     },
 
 // resets the lexer, sets new input
-setInput:function (input) {
+setInput:function (input, yy) {
+        this.yy = yy || this.yy || {};
         this._input = input;
         this._more = this._backtrack = this.done = false;
         this.yylineno = this.yyleng = 0;
@@ -648,7 +878,7 @@ unput:function (ch) {
         var lines = ch.split(/(?:\r\n?|\n)/g);
 
         this._input = ch + this._input;
-        this.yytext = this.yytext.substr(0, this.yytext.length - len - 1);
+        this.yytext = this.yytext.substr(0, this.yytext.length - len);
         //this.yyleng -= len;
         this.offset -= len;
         var oldLines = this.match.split(/(?:\r\n?|\n)/g);
@@ -910,7 +1140,6 @@ stateStackSize:function stateStackSize() {
     },
 options: {},
 performAction: function anonymous(yy,yy_,$avoiding_name_collisions,YY_START) {
-
 var YYSTATE=YY_START;
 switch($avoiding_name_collisions) {
 case 0:/* skip whitespace */
@@ -943,9 +1172,9 @@ case 13:return 'INVALID'
 break;
 }
 },
-rules: [/^(?:\s+)/,/^(?:(-?([0-9]|[1-9][0-9]+))(\.[0-9]+)?([eE][-+]?[0-9]+)?\b)/,/^(?:"(?:\\[\\"bfnrt/]|\\u[a-fA-F0-9]{4}|[^\\\0-\x09\x0a-\x1f"])*")/,/^(?:\{)/,/^(?:\})/,/^(?:\[)/,/^(?:\])/,/^(?:,)/,/^(?::)/,/^(?:true\b)/,/^(?:false\b)/,/^(?:null\b)/,/^(?:$)/,/^(?:.)/],
+rules: [/^(?:\s+)/,/^(?:(-?([0-9]|[1-9][0-9]+))(\.[0-9]+)?([eE][-+]?[0-9]+)?\b)/,/^(?:"(?:\\[\\"bfnrt\/]|\\u[a-fA-F0-9]{4}|[^\\\0-\x09\x0a-\x1f"])*")/,/^(?:\{)/,/^(?:\})/,/^(?:\[)/,/^(?:\])/,/^(?:,)/,/^(?::)/,/^(?:true\b)/,/^(?:false\b)/,/^(?:null\b)/,/^(?:$)/,/^(?:.)/],
 conditions: {"INITIAL":{"rules":[0,1,2,3,4,5,6,7,8,9,10,11,12,13],"inclusive":true}}
-};
+});
 return lexer;
 })();
 parser.lexer = lexer;
@@ -957,7 +1186,7 @@ return new Parser;
 })();
 
 
-if (typeof _dereq_ !== 'undefined' && typeof exports !== 'undefined') {
+if (typeof require !== 'undefined' && typeof exports !== 'undefined') {
 exports.parser = jsonlint;
 exports.Parser = jsonlint.Parser;
 exports.parse = function () { return jsonlint.parse.apply(jsonlint, arguments); };
@@ -966,17 +1195,15 @@ exports.main = function commonjsMain(args) {
         console.log('Usage: '+args[0]+' FILE');
         process.exit(1);
     }
-    var source = _dereq_('fs').readFileSync(_dereq_('path').normalize(args[1]), "utf8");
+    var source = require('fs').readFileSync(require('path').normalize(args[1]), "utf8");
     return exports.parser.parse(source);
 };
-if (typeof module !== 'undefined' && _dereq_.main === module) {
+if (typeof module !== 'undefined' && require.main === module) {
   exports.main(process.argv.slice(1));
 }
 }
-}).call(this,_dereq_("UPikzY"))
-},{"UPikzY":5,"fs":3,"path":4}],3:[function(_dereq_,module,exports){
-
-},{}],4:[function(_dereq_,module,exports){
+}).call(this,require('_process'))
+},{"_process":6,"fs":3,"path":5}],5:[function(require,module,exports){
 (function (process){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -1203,51 +1430,168 @@ var substr = 'ab'.substr(-1) === 'b'
     }
 ;
 
-}).call(this,_dereq_("UPikzY"))
-},{"UPikzY":5}],5:[function(_dereq_,module,exports){
+}).call(this,require('_process'))
+},{"_process":6}],6:[function(require,module,exports){
 // shim for using process in browser
-
 var process = module.exports = {};
 
-process.nextTick = (function () {
-    var canSetImmediate = typeof window !== 'undefined'
-    && window.setImmediate;
-    var canPost = typeof window !== 'undefined'
-    && window.postMessage && window.addEventListener
-    ;
+// cached from whatever global is present so that test runners that stub it
+// don't break things.  But we need to wrap it in a try catch in case it is
+// wrapped in strict mode code which doesn't define any globals.  It's inside a
+// function because try/catches deoptimize in certain engines.
 
-    if (canSetImmediate) {
-        return function (f) { return window.setImmediate(f) };
+var cachedSetTimeout;
+var cachedClearTimeout;
+
+function defaultSetTimout() {
+    throw new Error('setTimeout has not been defined');
+}
+function defaultClearTimeout () {
+    throw new Error('clearTimeout has not been defined');
+}
+(function () {
+    try {
+        if (typeof setTimeout === 'function') {
+            cachedSetTimeout = setTimeout;
+        } else {
+            cachedSetTimeout = defaultSetTimout;
+        }
+    } catch (e) {
+        cachedSetTimeout = defaultSetTimout;
+    }
+    try {
+        if (typeof clearTimeout === 'function') {
+            cachedClearTimeout = clearTimeout;
+        } else {
+            cachedClearTimeout = defaultClearTimeout;
+        }
+    } catch (e) {
+        cachedClearTimeout = defaultClearTimeout;
+    }
+} ())
+function runTimeout(fun) {
+    if (cachedSetTimeout === setTimeout) {
+        //normal enviroments in sane situations
+        return setTimeout(fun, 0);
+    }
+    // if setTimeout wasn't available but was latter defined
+    if ((cachedSetTimeout === defaultSetTimout || !cachedSetTimeout) && setTimeout) {
+        cachedSetTimeout = setTimeout;
+        return setTimeout(fun, 0);
+    }
+    try {
+        // when when somebody has screwed with setTimeout but no I.E. maddness
+        return cachedSetTimeout(fun, 0);
+    } catch(e){
+        try {
+            // When we are in I.E. but the script has been evaled so I.E. doesn't trust the global object when called normally
+            return cachedSetTimeout.call(null, fun, 0);
+        } catch(e){
+            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error
+            return cachedSetTimeout.call(this, fun, 0);
+        }
     }
 
-    if (canPost) {
-        var queue = [];
-        window.addEventListener('message', function (ev) {
-            var source = ev.source;
-            if ((source === window || source === null) && ev.data === 'process-tick') {
-                ev.stopPropagation();
-                if (queue.length > 0) {
-                    var fn = queue.shift();
-                    fn();
-                }
+
+}
+function runClearTimeout(marker) {
+    if (cachedClearTimeout === clearTimeout) {
+        //normal enviroments in sane situations
+        return clearTimeout(marker);
+    }
+    // if clearTimeout wasn't available but was latter defined
+    if ((cachedClearTimeout === defaultClearTimeout || !cachedClearTimeout) && clearTimeout) {
+        cachedClearTimeout = clearTimeout;
+        return clearTimeout(marker);
+    }
+    try {
+        // when when somebody has screwed with setTimeout but no I.E. maddness
+        return cachedClearTimeout(marker);
+    } catch (e){
+        try {
+            // When we are in I.E. but the script has been evaled so I.E. doesn't  trust the global object when called normally
+            return cachedClearTimeout.call(null, marker);
+        } catch (e){
+            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error.
+            // Some versions of I.E. have different rules for clearTimeout vs setTimeout
+            return cachedClearTimeout.call(this, marker);
+        }
+    }
+
+
+
+}
+var queue = [];
+var draining = false;
+var currentQueue;
+var queueIndex = -1;
+
+function cleanUpNextTick() {
+    if (!draining || !currentQueue) {
+        return;
+    }
+    draining = false;
+    if (currentQueue.length) {
+        queue = currentQueue.concat(queue);
+    } else {
+        queueIndex = -1;
+    }
+    if (queue.length) {
+        drainQueue();
+    }
+}
+
+function drainQueue() {
+    if (draining) {
+        return;
+    }
+    var timeout = runTimeout(cleanUpNextTick);
+    draining = true;
+
+    var len = queue.length;
+    while(len) {
+        currentQueue = queue;
+        queue = [];
+        while (++queueIndex < len) {
+            if (currentQueue) {
+                currentQueue[queueIndex].run();
             }
-        }, true);
-
-        return function nextTick(fn) {
-            queue.push(fn);
-            window.postMessage('process-tick', '*');
-        };
+        }
+        queueIndex = -1;
+        len = queue.length;
     }
+    currentQueue = null;
+    draining = false;
+    runClearTimeout(timeout);
+}
 
-    return function nextTick(fn) {
-        setTimeout(fn, 0);
-    };
-})();
+process.nextTick = function (fun) {
+    var args = new Array(arguments.length - 1);
+    if (arguments.length > 1) {
+        for (var i = 1; i < arguments.length; i++) {
+            args[i - 1] = arguments[i];
+        }
+    }
+    queue.push(new Item(fun, args));
+    if (queue.length === 1 && !draining) {
+        runTimeout(drainQueue);
+    }
+};
 
+// v8 likes predictible objects
+function Item(fun, array) {
+    this.fun = fun;
+    this.array = array;
+}
+Item.prototype.run = function () {
+    this.fun.apply(null, this.array);
+};
 process.title = 'browser';
 process.browser = true;
 process.env = {};
 process.argv = [];
+process.version = ''; // empty string to avoid regexp issues
+process.versions = {};
 
 function noop() {}
 
@@ -1261,14 +1605,60 @@ process.emit = noop;
 
 process.binding = function (name) {
     throw new Error('process.binding is not supported');
-}
+};
 
-// TODO(shtylman)
 process.cwd = function () { return '/' };
 process.chdir = function (dir) {
     throw new Error('process.chdir is not supported');
 };
+process.umask = function() { return 0; };
 
-},{}]},{},[1])
-(1)
+},{}],7:[function(require,module,exports){
+var jsonlint = require('jsonlint-lines'),
+  geojsonHintObject = require('./object');
+
+/**
+ * @alias geojsonhint
+ * @param {(string|object)} GeoJSON given as a string or as an object
+ * @param {Object} options
+ * @param {boolean} [options.noDuplicateMembers=true] forbid repeated
+ * properties. This is only available for string input, becaused parsed
+ * Objects cannot have duplicate properties.
+ * @param {boolean} [options.precisionWarning=true] warn if GeoJSON contains
+ * unnecessary coordinate precision.
+ * @returns {Array<Object>} an array of errors
+ */
+function hint(str, options) {
+
+    var gj, errors = [];
+
+    if (typeof str === 'object') {
+        gj = str;
+    } else if (typeof str === 'string') {
+        try {
+            gj = jsonlint.parse(str);
+        } catch(e) {
+            var match = e.message.match(/line (\d+)/);
+            var lineNumber = parseInt(match[1], 10);
+            return [{
+                line: lineNumber - 1,
+                message: e.message,
+                error: e
+            }];
+        }
+    } else {
+        return [{
+            message: 'Expected string or object as input',
+            line: 0
+        }];
+    }
+
+    errors = errors.concat(geojsonHintObject.hint(gj, options));
+
+    return errors;
+}
+
+module.exports.hint = hint;
+
+},{"./object":1,"jsonlint-lines":4}]},{},[7])(7)
 });
