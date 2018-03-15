@@ -4,8 +4,6 @@
 
 A simple Django app to validate your GeoJSON. This app is available at http://geojsonlint.com but can run locally with minimal effort.
 
-More info at http://geojason.info/2012/geojson-validation-via-geojsonlint.com/
-
 ## Getting Started
 
 1. Clone the repo and cd into it
