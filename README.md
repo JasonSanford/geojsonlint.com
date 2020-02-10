@@ -2,7 +2,7 @@
 
 <img src="https://api.travis-ci.org/JasonSanford/geojsonlint.com.png">
 
-A simple Django app to validate your GeoJSON.
+A simple Django app to validate your GeoJSON. This app is available at http://geojsonlint.com but can run locally with minimal effort.
 
 ## Getting Started
 
