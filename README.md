@@ -1,4 +1,6 @@
-# geojsonlint.com
+# READ THIS
+
+This code used to power https://geojsonlint.com - I let the domain registration expire but someone else picked it up and forked this code to keep it running. Any changes to this repo will not be reflected at https://geojsonlint.com, I'm not even sure who manages that domain.
 
 <img src="https://api.travis-ci.org/JasonSanford/geojsonlint.com.png">
 
